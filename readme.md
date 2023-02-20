@@ -1,4 +1,5 @@
 # Pollmaster V 2.5
+# I will make my own tutorial on how to install when I get A chance
 
 ## Overview
 
