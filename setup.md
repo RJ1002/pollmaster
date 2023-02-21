@@ -1,21 +1,26 @@
 # Setting up Pollmaster
+-this is in a work in progress!!
 
 ## Requirements
 
-These steps have been tested on Ubuntu 19.04 with miniconda for Python 3.7 and Docker  
+These steps have been tested on windows 10 with miniconda for Python 3.7 and Docker  
 [Miniconda3](https://docs.conda.io/en/latest/miniconda.html)  
-[Docker Engine: Community](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+[MongoDB](https://www.mongodb.com/try/download/community)
 
 ## Installation
+
+-open Anaconda Prompt
 
 Execute the following commands from a terminal window:
 ```sh
 conda create --name pollmaster
 conda activate pollmaster
-git clone https://github.com/matnad/pollmaster.git
+conda install git
+(now choose a location at where you want to install pollmaster) Example: cd c:/discordbot/
+git clone https://github.com/RJ1002/pollmaster.git
 cd pollmaster
 conda install pip
-~/miniconda3/envs/pollmaster/bin/pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 ##  Setup app and bot in Discord 
 
@@ -23,7 +28,7 @@ conda install pip
 
 ## Running the application
 
-- start a mongodb container using docker run -it -d -p 27017:27017 --name mongodb mongo
+- 
 - Create a secrets.py in essentials folder in the project. You can use the following template
 
 ```python
@@ -32,16 +37,30 @@ class Secrets:
         self.dbl_token = ''  # DBL token (only needed for public bot)
         self.mongo_db = 'mongodb://localhost:27017/pollmaster'
         self.bot_token = '' # official discord bot token
-        self.mode = 'development' # or production
+        self.mode = 'development' # development or production
 
 SECRETS = Secrets()
 ```
-
-- Run the application using python pollmaster.py
-- You can see the following :
+- After you do the above things:
+- open another "Anaconda Prompt" console and enter the following:
+```sh
+    conda activate pollmaster
+    cd [your pollmaster install location] example: cd c:/discordbot/pollmaster
+    python ipc.py
 ```
-AsyncIOMotorDatabase(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=False, driver=DriverInfo(name='Motor', version='2.0.0', platform=None)), 'pollmaster'))
-Servers verified. Bot running.
+- now on the console that you used to install pollmaster 
+- Run: "python launcher.py"
+- You should see the following:
+```
+[2023-02-20 19:55:12,776 Cluster#Launcher/INFO] Hello, world!
+[2023-02-20 19:55:12,777 Cluster#Launcher/INFO] Preparing 1 clusters
+[2023-02-20 19:55:12,777 Cluster#Alpha/INFO] Initialized with shard ids [0], total shards 1
+[2023-02-20 19:55:12,778 Cluster#Launcher/INFO] Starting Cluster#Alpha
+[2023-02-20 19:55:12,788 Cluster#Alpha/INFO] Process started with PID 9272
+[2023-02-20 19:55:17,339 Cluster#Alpha/INFO] Process started successfully
+[2023-02-20 19:55:17,339 Cluster#Launcher/INFO] Done!
+[2023-02-20 19:55:17,340 Cluster#Launcher/INFO] All clusters launched
+[2023-02-20 19:55:17,340 Cluster#Launcher/INFO] Startup completed in 4.5637565s
 ```
 ##  Invite the bot in Discord 
 
