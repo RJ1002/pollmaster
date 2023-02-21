@@ -1,5 +1,5 @@
 # Setting up Pollmaster
--this is in a work in progress!!
+-work in progress!!
 
 ## Requirements
 
@@ -9,13 +9,14 @@ These steps have been tested on windows 10 with miniconda for Python 3.7 and Doc
 
 ## Installation
 
--open Anaconda Prompt
+-first open "Anaconda Prompt"
 
 Execute the following commands from a terminal window:
 ```sh
 conda create --name pollmaster
 conda activate pollmaster
 conda install git
+conda install python=3.7
 (now choose a location at where you want to install pollmaster) Example: cd c:/discordbot/
 git clone https://github.com/RJ1002/pollmaster.git
 cd pollmaster
@@ -28,7 +29,6 @@ pip install -r requirements.txt
 
 ## Running the application
 
-- 
 - Create a secrets.py in essentials folder in the project. You can use the following template
 
 ```python
@@ -49,8 +49,8 @@ SECRETS = Secrets()
     python ipc.py
 ```
 - now on the console that you used to install pollmaster 
-- Run: "python launcher.py"
-- You should see the following:
+- Run: python launcher.py
+- You should see the following(or something similer):
 ```
 [2023-02-20 19:55:12,776 Cluster#Launcher/INFO] Hello, world!
 [2023-02-20 19:55:12,777 Cluster#Launcher/INFO] Preparing 1 clusters
