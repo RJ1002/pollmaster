@@ -75,3 +75,8 @@ SECRETS = Secrets()
 ## Log files
 
 - You can view the log file pollmaster.log in the pollmaster directory
+
+## bat file info
+- for start_ipc.bat and start_launcher.bat: the first line you will need to fine you anaconda directory (example: c:/discordbot/miniconda3)
+- if you want to set it up to start on windows boot: you can create shortcut of the bat files and put it in your startup folder.
+- startup file location: C:\Users\Username\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
