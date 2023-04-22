@@ -1,5 +1,4 @@
 # Pollmaster V 2.5
-- [click here for instructions to install on windows.](https://github.com/RJ1002/pollmaster/blob/master/setup.md) (work in progress) 
 
 ## Overview
 

@@ -3,6 +3,7 @@ import logging
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 
 from essentials.multi_server import get_server_pre, ask_for_server
 from essentials.settings import SETTINGS
@@ -235,8 +236,10 @@ class Help(commands.Cog):
 
         return embed
 
-    @commands.command()
-    async def help(self, ctx):
+    # @commands.hybrid_command(name="pmhelp",description="Display commands")
+
+    @commands.hybrid_command(name="help", description="Display commands")
+    async def pmhelp(self, ctx):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
@@ -365,7 +368,7 @@ class Help(commands.Cog):
                 await channel.send(status_msg)
 
 
-def setup(bot):
+async def setup(bot):
     global logger
     logger = logging.getLogger('discord')
-    bot.add_cog(Help(bot))
+    await bot.add_cog(Help(bot))

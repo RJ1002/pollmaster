@@ -1,10 +1,12 @@
 import json
 import sys
 import traceback
+import asyncio
 
 import aiohttp
 import discord
 import logging
+
 
 
 from essentials.messagecache import MessageCache
@@ -13,6 +15,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from essentials.multi_server import get_pre
 from essentials.settings import SETTINGS
+
+syncOnce = False
 
 bot_config = {
     'command_prefix': get_pre,
@@ -23,8 +27,14 @@ bot_config = {
     'fetch_offline_members': False,
     'max_messages': 15000
 }
-
-bot = commands.AutoShardedBot(**bot_config)
+intents = discord.Intents.default()
+intents.messages = True
+intents.members = True
+intents.reactions = True
+intents.message_content = True
+intents.guilds = True
+intents.presences = True
+bot = commands.AutoShardedBot(**bot_config, intents=intents)
 bot.remove_command('help')
 
 bot.message_cache = MessageCache(bot)
@@ -50,8 +60,9 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 extensions = ['cogs.config', 'cogs.poll_controls', 'cogs.help', 'cogs.db_api', 'cogs.admin']
-for ext in extensions:
-    bot.load_extension(ext)
+async def setup(bot):
+    for ext in extensions:
+        await bot.load_extension(ext)
 
 
 @bot.event
@@ -62,7 +73,7 @@ async def on_message(message):
         prefixes = (t.lower() for t in prefix)
         for pfx in prefixes:
             if len(pfx) >= 1 and message.content.lower().startswith(pfx.lower()):
-                # print("Matching", message.content, "with", pfx)
+                print("Matching", message.content, "with", pfx)
                 message.content = pfx + message.content[len(pfx):]
                 await bot.process_commands(message)
                 break
@@ -74,12 +85,15 @@ async def on_message(message):
 
 @bot.event
 async def on_ready():
+    global syncOnce
+    await bot.wait_until_ready()
+    if not syncOnce:
+        await bot.tree.sync()
+        syncOnce = True
+        
     bot.owner = await bot.fetch_user(SETTINGS.owner_id)
+    
 
-    mongo = AsyncIOMotorClient(SETTINGS.mongo_db)
-    bot.db = mongo.pollmaster
-    bot.session = aiohttp.ClientSession()
-    print(bot.db)
 
     # load emoji list
     with open('utils/emoji-compact.json', encoding='utf-8') as emojson:
@@ -162,4 +176,15 @@ async def on_guild_join(server):
         )
         bot.pre[str(server.id)] = 'pm!'
 
-bot.run(SETTINGS.bot_token)
+async def main():
+    async with bot:
+        mongo = AsyncIOMotorClient(SETTINGS.mongo_db)
+        bot.db = mongo.pollmaster
+        bot.session = aiohttp.ClientSession()
+        await setup(bot)
+        await bot.start(SETTINGS.bot_token)
+
+asyncio.run(main())
+
+
+

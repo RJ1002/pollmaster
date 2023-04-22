@@ -14,7 +14,7 @@ import discord
 import pytz
 import regex
 from bson import ObjectId
-from matplotlib import rcParams
+from matplotlib import get_data_path
 from matplotlib.afm import AFM
 from pytz import UnknownTimeZoneError
 from unidecode import unidecode
@@ -29,7 +29,7 @@ logger = logging.getLogger('discord')
 
 # Helvetica is the closest font to Whitney (discord uses Whitney) in afm
 # This is used to estimate text width and adjust the layout of the embeds
-afm_fname = os.path.join(rcParams['datapath'], 'fonts', 'afm', 'phvr8a.afm')
+afm_fname = os.path.join(get_data_path(), 'fonts', 'afm', 'phvr8a.afm')
 with open(afm_fname, 'rb') as fh:
     afm = AFM(fh)
 
@@ -1002,7 +1002,7 @@ class Poll:
 
             for user_id in self.unique_participants:
                 # member = self.server.get_member(int(user_id))
-                member = await self.bot.member_cache.get(self.server, int(user_id))
+                member = self.bot.get_user(int(user_id))
 
                 if not member:
                     name = "<Deleted User>"
@@ -1045,7 +1045,7 @@ class Poll:
 
             for user_id in self.unique_participants:
                 # member = self.server.get_member(int(user_id))
-                member = await self.bot.member_cache.get(self.server, int(user_id))
+                member = self.bot.get_user(int(user_id))
                 if not member:
                     name = "<Deleted User>"
                 else:
@@ -1124,8 +1124,8 @@ class Poll:
         self.id = ObjectId(str(d['_id']))
         self.server = self.bot.get_guild(int(d['server_id']))
         self.channel = self.bot.get_channel(int(d['channel_id']))
-        if self.server:
-            self.author = await self.bot.member_cache.get(self.server, int(d['author']))
+        if self.server != None:
+            self.author = self.bot.get_user(int(d['author']))
             # self.author = self.server.get_member(int(d['author']))
         else:
             self.author = None
@@ -1482,11 +1482,12 @@ class Poll:
                 weight = max(valid_weights)
 
         # unvote for anon and hidden count
-        if self.anonymous or self.hide_count:
+        if self.anonymous or self.hide_count and user != None:
             vote = await Vote.load_from_db(self.bot, self.id, user.id, choice)
             if vote:
                 await vote.delete_from_db()
                 await self.refresh(message)
+                await self.bot.loop.create_task(user.send(f'Your vote for **{self.options_reaction[choice]}** has been REMOVED.'))
                 return
 
         # check if already voted for the same choice
@@ -1524,7 +1525,7 @@ class Poll:
             if not answer or answer.lower() == "-":
                 answer = "No Answer"
 
-        if self.anonymous and self.hide_count:
+        if self.anonymous or self.hide_count:
             self.bot.loop.create_task(user.send(f'Your vote for **{self.options_reaction[choice]}** has been counted.'))
 
         # commit

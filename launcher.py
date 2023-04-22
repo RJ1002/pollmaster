@@ -47,9 +47,9 @@ class Launcher:
     def get_shard_count(self):
         if SETTINGS.mode == "development":
             return 1
-        data = requests.get('https://discordapp.com/api/v7/gateway/bot', headers={
+        data = requests.get('https://discordapp.com/api/v9/gateway/bot', headers={
             "Authorization": "Bot "+TOKEN,
-            "User-Agent": "DiscordBot (https://github.com/Rapptz/discord.py 1.5.1) Python/3.8 aiohttp/3.6.1"
+            "User-Agent": "DiscordBot (https://github.com/Rapptz/discord.py 2.2.2) Python/3.8 aiohttp/3.7.4"
         })
         data.raise_for_status()
         content = data.json()

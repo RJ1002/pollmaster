@@ -24,12 +24,19 @@ class ClusterBot(commands.AutoShardedBot):
         self.cluster_name = kwargs.pop('cluster_name')
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        super().__init__(**kwargs, loop=loop)
+        intents = discord.Intents.default()
+        intents.messages = True
+        intents.members = True
+        intents.reactions = True
+        intents.message_content = True
+        intents.guilds = True
+        intents.presences = True
+        super().__init__(**kwargs, loop=loop, intents=intents)
         self.websocket = None
         self._last_result = None
         self.ws_task = None
         self.responses = asyncio.Queue()
-        self.eval_wait = False
+        self.eval_wait = True
         log = logging.getLogger(f"Cluster#{self.cluster_name}")
         log.setLevel(logging.DEBUG)
         log.handlers = [logging.FileHandler(f'cluster-{self.cluster_name}.log', encoding='utf-8', mode='a')]
@@ -44,8 +51,9 @@ class ClusterBot(commands.AutoShardedBot):
         self.pre = None
 
         self.remove_command('help')
-        self.load_extension("cogs.eval")
         extensions = ['cogs.config', 'cogs.poll_controls', 'cogs.help', 'cogs.db_api', 'cogs.admin']
+        self.load_extension("cogs.eval")
+        self.loop.create_task(self.ensure_ipc())
         for ext in extensions:
             self.load_extension(ext)
 
@@ -53,8 +61,7 @@ class ClusterBot(commands.AutoShardedBot):
         self.member_cache = MemberCache()
         self.refresh_blocked = {}
         self.refresh_queue = {}
-
-        self.loop.create_task(self.ensure_ipc())
+        
         self.run(kwargs['token'])
 
     async def on_message(self, message):
