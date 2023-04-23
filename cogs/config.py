@@ -43,7 +43,7 @@ class Config(commands.Cog):
                 await ctx.send(f'The admin role restricts which users are able to create and manage ALL polls on this server.  \n'
                                    f'No admin role set. '
                                    f'To set one type `{result.get("prefix")}adminrole <role name>`')
-        elif role in [r.name for r in server.roles]:
+        elif role.name in [r.name for r in server.roles]:
             await self.bot.db.config.update_one({'_id': str(server.id)}, {'$set': {'admin_role': str(role)}}, upsert=True)
             await ctx.send(f'Server role `{role}` can now manage all polls.')
         else:
@@ -66,7 +66,7 @@ class Config(commands.Cog):
                 await ctx.send(f'The user role restricts which users are able to create and manage their own polls.  \n'
                                    f'No user role set. '
                                    f'To set one type `{result.get("prefix")}userrole <role name>`')
-        elif role in [r.name for r in server.roles]:
+        elif role.name in [r.name for r in server.roles]:
             await self.bot.db.config.update_one({'_id': str(server.id)}, {'$set': {'user_role': str(role)}}, upsert=True)
             await ctx.send(f'Server role `{role}` can now create and manage their own polls.')
         else:
