@@ -1,5 +1,7 @@
 # Pollmaster V 2.5
 
+- [click here for instructions to install on windows.](https://github.com/RJ1002/pollmaster/blob/slash/setup.md) (work in progress) 
+
 ## Overview
 
 With Pollmaster you can very easily create and manage complex polls on your server. 
