@@ -267,11 +267,11 @@ class Help(commands.Cog):
         if message.author == self.bot.user:
             return
 
-        if message.content.startswith(f"<@!{self.bot.user.id}>"):
+        if message.content.startswith(f"<@{self.bot.user.id}>"):
             print(message.content)
             print(self.bot.user.name)
 
-            if message.content.startswith(f"<@!{self.bot.user.id}> mention"):
+            if message.content.startswith(f"<@{self.bot.user.id}> mention"):
                 channel = message.channel
                 if not isinstance(channel, discord.TextChannel):
                     await channel.send("@mention can only be used in a server text channel.")
@@ -282,7 +282,7 @@ class Help(commands.Cog):
                     await channel.send("Could not determine your server.")
                     return
 
-                if message.content == f"<@!{self.bot.user.id}> mention":
+                if message.content == f"<@{self.bot.user.id}> mention":
                     await channel.send("The following mention tags are available:\n🔹 mention prefix")
                     return
 
@@ -302,7 +302,7 @@ class Help(commands.Cog):
                 else:
                     await channel.send(f'Tag "{tag}" not found. Type `@{self.bot.user.name} mention` for a list of tags.')
 
-            if message.content.startswith(f"<@!{self.bot.user.id}> debug"):
+            if message.content.startswith(f"<@{self.bot.user.id}> debug"):
                 channel = message.channel
                 if not isinstance(channel, discord.TextChannel):
                     await channel.send("`debug` can only be used in a server text channel.")
