@@ -217,20 +217,21 @@ class Help(commands.Cog):
                             value='If you enjoy the bot, you can show your appreciation by giving him an upvote on Discordbots.',
                             inline=False)
             embed.add_field(name='🔹 **Developer**',
-                            value='Pollmaster is developed by Newti#0654',
+                            value='Pollmaster is developed by Newti#0654'
+                                  '\nmodifed by RJGamer1002#8253',
                             inline=False)
             embed.add_field(name='🔹 **Support**',
                             value='You can support Pollmaster by sending an upvote his way or by clicking the donate link '
-                                  'on the discordbots page:\n https://discordbots.org/bot/444514223075360800',
+                                  'on the discordbots page:\n not enabled',
                             inline=False)
             embed.add_field(name='🔹 **Support Server**',
                             value='If you need help with pollmaster, want to try him out or would like to give feedback '
-                                  'to the developer, feel free to join the support server: https://discord.gg/Vgk8Nve',
+                                  'to the developer, feel free to join the support server: https://discord.gg/4VFepC7',
                             inline=False)
             embed.add_field(name='🔹 **Github**',
-                            value='The full python source code is on my Github: https://github.com/matnad/pollmaster',
+                            value='The full python source code is on my Github: https://github.com/RJ1002/pollmaster/tree/slash',
                             inline=False)
-            embed.add_field(name='**Thanks for using Pollmaster!** 💗', value='Newti', inline=False)
+            embed.add_field(name='**Thanks for using Pollmaster!** 💗', value='Newti RJGamer1002', inline=False)
         else:
             return None
 
