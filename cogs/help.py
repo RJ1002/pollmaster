@@ -366,7 +366,86 @@ class Help(commands.Cog):
                                   'visit the support discord server.'
 
                 await channel.send(status_msg)
+    @commands.hybrid_command(name="debug", description="run debug")
+    async def pmdebug(self, ctx):
+        print(self.bot.user.name)
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.send("`debug` can only be used in a server text channel.")
+            return
 
+        guild = ctx.guild
+        if not guild:
+            await ctx.send("Could not determine your server. Run the command in a server text channel.")
+            return
+
+        status_msg = ''
+        setup_correct = True
+        # check send message permissions
+        permissions = ctx.channel.permissions_for(guild.me)
+        if permissions.send_messages:
+            status_msg += ' ✅ Sending text messages\n'
+        else:
+            status_msg += ' ❗ Sending text messages. I need send message permission!\n'
+            setup_correct = False
+
+        # check embed link permissions
+        if permissions.embed_links:
+            status_msg += '✅ Sending embedded messages\n'
+        else:
+            status_msg += '❗ Sending embedded messages. I need permissions to embed links!\n'
+            setup_correct = False
+
+        # check manage messages
+        if permissions.manage_messages:
+            status_msg += '✅ Deleting messages and reactions\n'
+        else:
+            status_msg += '❗ Deleting messages and reactions. I need the manage messages permission!\n'
+            setup_correct = False
+
+        # check adding reactions
+        if permissions.add_reactions:
+            status_msg += '✅ Adding reactions\n'
+        else:
+            status_msg += '❗ Adding reactions. I need the add reactions permission!\n'
+            setup_correct = False
+
+        # read message history
+        if permissions.read_message_history:
+            status_msg += '✅ Reading message history\n'
+        else:
+            status_msg += '❗ Reading message history. ' \
+                          'I need to be able to read past messages in this channel!\n'
+            setup_correct = False
+
+        if setup_correct:
+            status_msg += 'No action required. As far as i can see, your permissions are set up correctly ' \
+                          'for this channel. \n' \
+                          'If the bot does not work, feel free to join the support discord server.'
+        else:
+            status_msg += 'Please try to fix the issues above. \nIf you are still having problems, ' \
+                          'visit the support discord server.'
+        await ctx.send(status_msg)
+        
+    @commands.hybrid_command(name="mention", description="run mention")
+    async def pmmention(self, ctx, *, tag=None):
+        ##channel = message.channel
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.send("/mention can only be used in a server text channel.")
+            return
+
+        guild = ctx.guild
+        if not guild:
+            await ctx.send("Could not determine your server.")
+            return
+        if tag == "prefix":
+            pre = await get_server_pre(self.bot, guild)
+            # await channel.send(f'The prefix for this server/channel is: \n {pre} \n To change it type: \n'
+            #                    f'{pre}prefix <new_prefix>')
+            await ctx.send(pre)
+        elif tag == None:
+            await ctx.send("The following mention tags are available:\n🔹 mention prefix")
+        else:
+            await ctx.send(f'Tag "{tag}" not found. Type `/mention` for a list of tags.')
 
 async def setup(bot):
     global logger
