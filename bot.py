@@ -84,9 +84,6 @@ class ClusterBot(commands.AutoShardedBot):
         mongo = AsyncIOMotorClient(SETTINGS.mongo_db)
         self.db = mongo.pollmaster
         self.session = aiohttp.ClientSession()
-        #await tree.sync()
-        # print "ready" in the console when the bot is ready to work
-        #print("ready")
         with open('utils/emoji-compact.json', encoding='utf-8') as emojson:
             self.emoji_dict = json.load(emojson)
         self.pre = {entry['_id']: entry.get('prefix', 'pm!') async for entry in
@@ -113,7 +110,7 @@ class ClusterBot(commands.AutoShardedBot):
     async def on_command_error(self, ctx, exc):
         if not isinstance(exc, (commands.CommandNotFound, commands.NotOwner)):
             self.log.critical(''.join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
-            await ctx.send("check logs")
+            # await ctx.send("check logs")
 
     async def on_error(self, *args, **kwargs):
         self.log.critical(traceback.format_exc())
