@@ -277,7 +277,7 @@ class Help(commands.Cog):
         if message.author == self.bot.user:
             return
 
-        if message.content.startswith(f"<@{self.bot.user.id}"):
+        if message.content.startswith(f"<@{self.bot.user.id}>"):
             print(message.content)
             print(self.bot.user.name)
 
