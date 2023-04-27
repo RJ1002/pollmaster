@@ -62,7 +62,6 @@ ch.setFormatter(formatter)
 # add the handlers to the logger
 logger.addHandler(fh)
 logger.addHandler(ch)
-##'cogs.slash'
 extensions = ['cogs.config', 'cogs.poll_controls', 'cogs.help', 'cogs.db_api', 'cogs.admin']
 async def setup(bot):
     for ext in extensions:
@@ -90,10 +89,6 @@ async def on_message(message):
 @bot.event
 async def on_ready():
     global syncOnce
-    #print(bot.guilds)
-    #await tree.sync()
-    # print "ready" in the console when the bot is ready to work
-    #print("ready")
     await bot.wait_until_ready()
     if not syncOnce:
         await bot.tree.sync()
