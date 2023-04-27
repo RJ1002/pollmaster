@@ -9,6 +9,9 @@ class Config(commands.Cog):
 
     @commands.hybrid_command(name="prefix", description="""Set a custom prefix for the server.""")
     @commands.has_permissions(manage_guild=True)
+    @app_commands.describe(
+        pre='Choose the new prefix you want',
+    )
     async def prefix(self, ctx, *, pre:str):
         """Set a custom prefix for the server."""
         server = ctx.message.guild
@@ -29,10 +32,12 @@ class Config(commands.Cog):
 
     @commands.hybrid_command(name="adminrole", description="Set or show the Admin Role. Members with this role can create polls and manage ALL polls.")
     @commands.has_permissions(manage_guild=True)
+    @app_commands.describe(
+        role='Choose the role for admin',
+    )
     async def adminrole(self, ctx, *, role: Role = None):
-        """Set or show the Admin Role. Members with this role can create polls and manage ALL polls. Parameter: <role> (optional)"""
         server = ctx.message.guild
-
+        
         if not role:
             result = await self.bot.db.config.find_one({'_id': str(server.id)})
             if result and result.get('admin_role'):
@@ -48,12 +53,13 @@ class Config(commands.Cog):
             await ctx.send(f'Server role `{role}` can now manage all polls.')
         else:
             await ctx.send(f'Server role `{role}` not found.')
-
+        
     @commands.hybrid_command(name="userrole", description="Set or show the User Role. Members with this role can create polls and manage their own polls.")
     @commands.has_permissions(manage_guild=True)
+    @app_commands.describe(
+        role='Choose the role for user',
+    )
     async def userrole(self, ctx, *, role: Role=None):
-        """Set or show the User Role. Members with this role can create polls and manage their own polls. 
-        Parameter: <role> (optional)"""
         server = ctx.message.guild
 
         if not role:

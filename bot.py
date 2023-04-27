@@ -17,14 +17,13 @@ from essentials.messagecache import MessageCache
 from essentials.multi_server import get_pre
 from essentials.settings import SETTINGS
 
-
 class ClusterBot(commands.AutoShardedBot):
     def __init__(self, **kwargs):
         self.pipe = kwargs.pop('pipe')
         self.cluster_name = kwargs.pop('cluster_name')
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        intents = discord.Intents.default()
+        intents = discord.Intents.all()
         intents.messages = True
         intents.members = True
         intents.reactions = True
@@ -36,7 +35,7 @@ class ClusterBot(commands.AutoShardedBot):
         self._last_result = None
         self.ws_task = None
         self.responses = asyncio.Queue()
-        self.eval_wait = True
+        self.eval_wait = False
         log = logging.getLogger(f"Cluster#{self.cluster_name}")
         log.setLevel(logging.DEBUG)
         log.handlers = [logging.FileHandler(f'cluster-{self.cluster_name}.log', encoding='utf-8', mode='a')]
@@ -51,8 +50,8 @@ class ClusterBot(commands.AutoShardedBot):
         self.pre = None
 
         self.remove_command('help')
-        extensions = ['cogs.config', 'cogs.poll_controls', 'cogs.help', 'cogs.db_api', 'cogs.admin']
         self.load_extension("cogs.eval")
+        extensions = ['cogs.config', 'cogs.poll_controls', 'cogs.help', 'cogs.db_api', 'cogs.admin']
         self.loop.create_task(self.ensure_ipc())
         for ext in extensions:
             self.load_extension(ext)
@@ -85,11 +84,14 @@ class ClusterBot(commands.AutoShardedBot):
         mongo = AsyncIOMotorClient(SETTINGS.mongo_db)
         self.db = mongo.pollmaster
         self.session = aiohttp.ClientSession()
+        #await tree.sync()
+        # print "ready" in the console when the bot is ready to work
+        #print("ready")
         with open('utils/emoji-compact.json', encoding='utf-8') as emojson:
             self.emoji_dict = json.load(emojson)
         self.pre = {entry['_id']: entry.get('prefix', 'pm!') async for entry in
                    self.db.config.find({}, {'_id', 'prefix'})}
-        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="pm!help"))
+        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="pm!help and /help"))
 
         self.log.info(f'[Cluster#{self.cluster_name}] Ready called.')
         self.pipe.send(1)
@@ -111,7 +113,7 @@ class ClusterBot(commands.AutoShardedBot):
     async def on_command_error(self, ctx, exc):
         if not isinstance(exc, (commands.CommandNotFound, commands.NotOwner)):
             self.log.critical(''.join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
-            # await ctx.send("check logs")
+            await ctx.send("check logs")
 
     async def on_error(self, *args, **kwargs):
         self.log.critical(traceback.format_exc())

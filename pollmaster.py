@@ -10,7 +10,9 @@ import logging
 
 
 from essentials.messagecache import MessageCache
+import discord
 from discord.ext import commands
+from discord import app_commands
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from essentials.multi_server import get_pre
@@ -27,7 +29,9 @@ bot_config = {
     'fetch_offline_members': False,
     'max_messages': 15000
 }
-intents = discord.Intents.default()
+intents = discord.Intents.all()
+client = discord.Client(intents=intents)
+tree = app_commands.CommandTree(client)
 intents.messages = True
 intents.members = True
 intents.reactions = True
@@ -58,7 +62,7 @@ ch.setFormatter(formatter)
 # add the handlers to the logger
 logger.addHandler(fh)
 logger.addHandler(ch)
-
+##'cogs.slash'
 extensions = ['cogs.config', 'cogs.poll_controls', 'cogs.help', 'cogs.db_api', 'cogs.admin']
 async def setup(bot):
     for ext in extensions:
@@ -86,12 +90,17 @@ async def on_message(message):
 @bot.event
 async def on_ready():
     global syncOnce
+    #print(bot.guilds)
+    #await tree.sync()
+    # print "ready" in the console when the bot is ready to work
+    #print("ready")
     await bot.wait_until_ready()
     if not syncOnce:
         await bot.tree.sync()
         syncOnce = True
+        print("sync!")
         
-    bot.owner = await bot.fetch_user(SETTINGS.owner_id)
+    bot.owner = SETTINGS.owner_id
     
 
 
@@ -116,7 +125,7 @@ async def on_ready():
     # cache prefixes
     bot.pre = {entry['_id']: entry.get('prefix', 'pm!') async for entry in bot.db.config.find({}, {'_id', 'prefix'})}
 
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="pm!help"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="pm!help and /help"))
 
     print("Bot running.")
 
@@ -155,14 +164,14 @@ async def on_command_error(ctx, e):
             e = discord.Embed(
                 title=f"Error With command: {ctx.command.name}",
                 description=f"```py\n{type(e).__name__}: {str(e)}\n```\n\nContent:{ctx.message.content}"
-                            f"\n\tServer: {ctx.message.server}\n\tChannel: <#{ctx.message.channel}>"
-                            f"\n\tAuthor: <@{ctx.message.author}>",
-                timestamp=ctx.message.timestamp
+                            f"\n\tServer: {ctx.message.guild}\n\tChannel: #{ctx.message.channel}"
+                            f'\n\tAuthor: @{ctx.message.author}',
+                timestamp=ctx.message.created_at
             )
-            await ctx.send(bot.owner, embed=e)
+            await ctx.send(f'<@!{bot.owner}>', embed=e)
 
         # if SETTINGS.mode == 'development':
-        raise e
+        # raise e
 
 
 @bot.event
