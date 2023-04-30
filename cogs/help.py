@@ -377,12 +377,12 @@ class Help(commands.Cog):
     async def pmdebug(self, ctx):
         print(self.bot.user.name)
         if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.response.send_message("`debug` can only be used in a server text channel.")
+            await ctx.response.send_message("`debug` can only be used in a server text channel.", delete_after=60)
             return
 
         guild = ctx.guild
         if not guild:
-            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.")
+            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
 
         status_msg = ''
@@ -431,7 +431,7 @@ class Help(commands.Cog):
         else:
             status_msg += 'Please try to fix the issues above. \nIf you are still having problems, ' \
                           'visit the support discord server.'
-        await ctx.response.send_message(status_msg)
+        await ctx.response.send_message(status_msg, delete_after=60)
     tag = str
     @app_commands.command(name="mention", description="run mention")
     @app_commands.describe(
@@ -439,33 +439,33 @@ class Help(commands.Cog):
     )
     async def pmmention(self, ctx, *, tag: tag = None):
         if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.response.send_message("`/mention` can only be used in a server text channel.")
+            await ctx.response.send_message("`/mention` can only be used in a server text channel.", delete_after=60)
             return
 
         guild = ctx.guild
         if not guild:
-            await ctx.response.send_message("Could not determine your server.")
+            await ctx.response.send_message("Could not determine your server.", delete_after=60)
             return
         if tag == "prefix":
             pre = await get_server_pre(self.bot, guild)
             await ctx.response.send_message(f'The prefix for this server/channel is: \n {pre} \n To change it type: \n'
-                                f'{pre}prefix <new_prefix>')
+                                f'{pre}prefix <new_prefix>', delete_after=60)
             #await ctx.response.send_message(pre)
         elif tag == None:
-            await ctx.response.send_message("The following mention tags are available:\n🔹 prefix")
+            await ctx.response.send_message("The following mention tags are available:\n🔹 prefix", delete_after=60)
         else:
-            await ctx.response.send_message(f'Tag "{tag}" not found. Type `/mention` for a list of tags.')
+            await ctx.response.send_message(f'Tag "{tag}" not found. Type `/mention` for a list of tags.', delete_after=60)
     @app_commands.command(name="ping", description="send a ping to bot")
     async def pmping(self, ctx):
         if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.response.send_message("`/ping` can only be used in a server text channel.")
+            await ctx.response.send_message("`/ping` can only be used in a server text channel.", delete_after=60)
             return
         guild = ctx.guild
         if not guild:
-            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.")
+            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
         else:
-            await ctx.response.send_message(f'Pong! In {round(ctx.client.latency * 1000)}ms')
+            await ctx.response.send_message(f'Pong! In {round(ctx.client.latency * 1000)}ms', delete_after=60)
     
 
 async def setup(bot):
