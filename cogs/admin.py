@@ -1,7 +1,8 @@
 import logging
 
+import discord
 from discord.ext import commands
-
+from discord import app_commands
 
 class Admin(commands.Cog):
     def __init__(self, bot):
@@ -9,12 +10,12 @@ class Admin(commands.Cog):
 
     # every commands needs owner permissions
     async def cog_check(self, ctx):
-        return self.bot.owner == ctx.author
+        return self.bot.owner == ctx.author.id
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send("Only the owner can use this module. Join the support discord server if you are having "
-                           "any problems. This usage has been logged.")
+                           f"any problems. This usage has been logged.")
             logger.warning(f'User {ctx.author} ({ctx.author.id}) has tried to access a restricted '
                            f'command via {ctx.message.content}.')
         elif isinstance(error, commands.MissingRequiredArgument):
@@ -23,6 +24,9 @@ class Admin(commands.Cog):
             logger.warning(error)
 
     @commands.hybrid_command(aliases=['r'], description="Reloads cogs")
+    @app_commands.describe(
+        cog='options: config, poll_controls, help, db_api, admin',
+    )
     async def reload(self, ctx, *, cog):
         if cog == 'c':
             cog = 'poll_controls'

@@ -5,12 +5,12 @@ from essentials.secrets import SECRETS
 
 class Settings:
     def __init__(self):
-        self.color = discord.Colour(int('e75e28', 16))
-        self.title_icon = "https://i.imgur.com/0T8QJXT.jpg" #PM
-        self.author_icon = "https://i.imgur.com/BxtNIab.jpg" #tag
-        self.report_icon = "https://i.imgur.com/GVVDZ31.png" #report
+        self.color = discord.Colour(int('7289da', 16))
+        self.title_icon = "https://i.imgur.com/vtLsAl8.jpg" #PM
+        self.author_icon = "https://i.imgur.com/TYbBtwB.jpg" #tag
+        self.report_icon = "https://i.imgur.com/YksGRLN.png" #report
         self.owner_id = 183940132129210369
-        self.msg_errors = True
+        self.msg_errors = False
         self.log_errors = True
         self.invite_link = \
             'https://discord.com/api/oauth2/authorize?client_id=687418918658375695&permissions=1073867840&scope=bot'

@@ -53,7 +53,8 @@ class Help(commands.Cog):
         if page == '🏠':
             # POLL CREATION SHORT
             embed.add_field(name='🆕 Making New Polls',
-                            value=f'`{pre}quick` | `{pre}new` | `{pre}advanced` | `{pre}prepare` | `{pre}cmd <args>`',
+                            value=f'`{pre}quick` | `{pre}new` | `{pre}advanced` | `{pre}prepare` | `{pre}cmd <args>`\n'
+                                  f'`/quick` | `/new` | `/advanced` | `/prepare` | `/cmd <args>`',
                             inline=False)
             # embed.add_field(name='Commands', value=f'`{pre}quick` | `{pre}new` | `{pre}prepared`', inline=False)
             # embed.add_field(name='Arguments', value=f'Arguments: `<poll question>` (optional)', inline=False)
@@ -62,7 +63,8 @@ class Help(commands.Cog):
 
             ## POLL CONTROLS
             embed.add_field(name='🔍 Show Polls',
-                            value=f'`{pre}show` | `{pre}show <label>` | `{pre}show <category>`', inline=False)
+                            value=f'`{pre}show` | `{pre}show <label>` | `{pre}show <category>`\n'
+                                  f'`/show` | `/show <label>` | `/show <category>`', inline=False)
             # embed.add_field(name='Command', value=f'`{pre}show (label)`', inline=False)
             # embed.add_field(name='Arguments', value=f'Arguments: `open` (default) | `closed` | `prepared` | '
             #                                         f'`<poll_label>` (optional)', inline=False)
@@ -71,7 +73,8 @@ class Help(commands.Cog):
 
             # POLL CONTROLS
             embed.add_field(name='🕹 Poll Controls',
-                            value=f'`{pre}copy` | `{pre}close` | `{pre}export` | `{pre}delete` | `{pre}activate` ',
+                            value=f'`{pre}copy` | `{pre}close` | `{pre}export` | `{pre}delete` | `{pre}activate`\n '
+                                  f'`/copy` | `/close` | `/export` | `/delete` | `/activate` ',
                             inline=False)
             # embed.add_field(name='Commands', value=f'`{pre}close` | `{pre}export` | `{pre}delete` | `{pre}activate` ',
             #                 inline=False)
@@ -81,13 +84,15 @@ class Help(commands.Cog):
 
             # POLL CONTROLS
             embed.add_field(name='🛠 Configuration',
-                            value=f'`{pre}userrole [role]` | `{pre}adminrole [role]` | `{pre}prefix <new_prefix>` ',
+                            value=f'`{pre}userrole [role]` | `{pre}adminrole [role]` | `{pre}prefix <new_prefix>`\n '
+                                  f'`/userrole [role]` | `/adminrole [role]` | `/prefix <new_prefix>` ',
                             inline=False
                             )
 
             # DEBUGGING
             embed.add_field(name='❔ Debugging',
-                            value=f'`@debug` | `@mention` | `@mention <tag>` ',
+                            value=f'`@debug` | `@mention` | `@mention <tag>`\n '
+                                  f'`/debug` | `/mention` | `/mention <tag>` ',
                             inline=False
                             )
             # ABOUT
@@ -102,27 +107,27 @@ class Help(commands.Cog):
                                   'Your Members need the <admin> or <user> role to use these commands. '
                                   'More on user rights in 🛠 Configuration.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Quick Poll:** `{pre}quick`',
+            embed.add_field(name=f'🔹 **Quick Poll:** `{pre}quick` or `/quick`',
                             value='If you just need a quick poll, this is the way to go. All you have to specify is the '
                                   'question and your answers; the rest will be set to default values.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Basic Poll:** `{pre}new`',
+            embed.add_field(name=f'🔹 **Basic Poll:** `{pre}new` or `/new`',
                             value='This command gives control over the most common settings. A step by step wizard will guide '
                                   'you through the process and you can specify options such as Multiple Choice, '
                                   'Anonymous Voting and Deadline.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Advanced Poll:** `{pre}advanced`',
+            embed.add_field(name=f'🔹 **Advanced Poll:** `{pre}advanced` or `/advanced`',
                             value='This command gives you full control over your poll. A step by step wizard will guide '
                                   'you through the process and you can specify additional options such as Hide Vote Count, '
                                   'Role Restrictions, Role Weights or Custom Write-In Answers (Survey Flags).',
                             inline=False)
-            embed.add_field(name=f'🔹 **Prepare and Schedule:** `{pre}prepare`',
+            embed.add_field(name=f'🔹 **Prepare and Schedule:** `{pre}prepare` or `/prepare`',
                             value=f'Similar to `{pre}advanced`, this gives you all the options. But additionally, the poll will '
                                   'be set to \'inactive\'. You can specify if the poll should activate at a certain time '
                                   f'and/or if you would like to manually `{pre}activate` it. '
                                   'Perfect if you are preparing for a team meeting!',
                             inline=False)
-            embed.add_field(name=f'🔹 **-Advanced- Commandline:** `{pre}cmd <arguments>`',
+            embed.add_field(name=f'🔹 **-Advanced- Commandline:** `{pre}cmd <arguments>` or `/cmd <arguments>`',
                             value=f'For the full syntax type `{pre}cmd help`\n'
                                   f'Similar to version 1 of the bot, with this command you can create a poll in one message. '
                                   f'Pass all the options you need via command line arguments, the rest will be set to '
@@ -135,12 +140,12 @@ class Help(commands.Cog):
                             value='All users can display and list polls, with the exception of prepared polls. '
                                   'Voting is done simply by using the reactions below the poll.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Show a Poll:** `{pre}show <poll_label>`',
+            embed.add_field(name=f'🔹 **Show a Poll:** `{pre}show <poll_label>` or `/show <poll_label>`',
                             value='This command will refresh and display a poll. The votes in the message will always '
                                   'be up to date and accurate. The number of reactions can be different for a number '
                                   'of reasons and you can safely disregard them.',
                             inline=False)
-            embed.add_field(name=f'🔹 **List Polls:** `{pre}show <> | open | closed | prepared`',
+            embed.add_field(name=f'🔹 **List Polls:** `{pre}show <> | open | closed | prepared` or `/show <> | open | closed | prepared`',
                             value=f'If you just type `{pre}show` without an argument it will default to `{pre}show open`.'
                                   'These commands will print a list of open, closed or prepared polls that exist on '
                                   'the server. The first word in bold is the label of the poll and after the colon, '
@@ -152,29 +157,29 @@ class Help(commands.Cog):
                             value='All these commands except copy can only be used by an <admin> or by the author of the poll. '
                                   'Go to 🛠 Configuration for more info on the permissions.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Copy** `{pre}copy <poll_label>`',
+            embed.add_field(name=f'🔹 **Copy** `{pre}copy <poll_label>` or `/copy <poll_label>`',
                             value='This will give you a cmd string that you can post into any channel to create a copy'
                                   'of the specified poll. It will increment the label and depending on the settings, '
                                   'you might need to add missing information like a new deadline. '
                                   f'\nFor more info, see: `{pre}cmd help`.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Close** `{pre}close <poll_label>`',
+            embed.add_field(name=f'🔹 **Close** `{pre}close <poll_label>` or `/close <poll_label>`',
                             value='Polls will close automatically when their deadline is reached. But you can always '
                                   'close them manually by using this command. A closed poll will lock in the votes so '
                                   'users can no longer change, add or remove votes. Once closed, you can export a poll.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Delete** `{pre}delete <poll_label>`',
+            embed.add_field(name=f'🔹 **Delete** `{pre}delete <poll_label>` or `/delete <poll_label>`',
                             value='This will *permanently and irreversibly* delete a poll from the database. '
                                   'Once done, the label is freed up and can be assigned again.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Export** `{pre}export <poll_label>`',
+            embed.add_field(name=f'🔹 **Export** `{pre}export <poll_label>` or `/export <poll_label>`',
                             value='You can use this command or react with 📎 to a closed poll to generate a report. '
                                   'The report will then be sent to you in discord via the bot. This utf8-textfile '
                                   '(make sure to open it in an utf8-ready editor) will contain all the infos about the '
                                   'poll, including a detailed list of participants and their votes (just a list of names '
                                   'for anonymous polls).',
                             inline=False)
-            embed.add_field(name=f'🔹 **Activate** `{pre}activate <poll_label>`',
+            embed.add_field(name=f'🔹 **Activate** `{pre}activate <poll_label>` or `/activate <poll_label>`',
                             value=f'To see how you can prepare inactive polls read the `{pre}prepare` command under Making '
                                   'New Polls. This command is used to manually activate a prepared poll.',
                             inline=False)
@@ -183,17 +188,17 @@ class Help(commands.Cog):
             embed.add_field(name='🛠 Configuration',
                             value='To run any of these commands you need the **\"Manage Server\"** permisson.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Poll Admins** `{pre}adminrole <role name> (optional)`',
+            embed.add_field(name=f'🔹 **Poll Admins** `{pre}adminrole <role name> (optional)` or `/adminrole <role name> (optional)`',
                             value='This gives the rights to create polls and to control ALL polls on the server. '
                                   f'To see the current role for poll admin, run the command without an argument: `{pre}adminrole`\n'
                                   'If you want to change the admin role to any other role, use the name of the new role '
                                   f'as the argument: `{pre}adminrole moderators`',
                             inline=False)
-            embed.add_field(name=f'🔹 **Poll Users** `{pre}userrole <role name> (optional)`',
+            embed.add_field(name=f'🔹 **Poll Users** `{pre}userrole <role name> (optional)` or `/userrole <role name> (optional)`',
                             value='Everything here is identical to the admin role, except that Poll Users can only '
                                   'control the polls which were created by themselves.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Change Prefix** `{pre}prefix <new_prefix>`',
+            embed.add_field(name=f'🔹 **Change Prefix** `{pre}prefix <new_prefix>` or `/prefix <new_prefix>`',
                             value='This will change the bot prefix for your server. If you want to use a trailing '
                                   'whitespace, use "\w" instead of " " (discord deletes trailing whitespaces).',
                             inline=False)
@@ -202,12 +207,12 @@ class Help(commands.Cog):
             embed.add_field(name='❔ Debugging',
                             value='These commands are independent of your server prefix and serve to debug the bot.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Debug:** `@debug`',
+            embed.add_field(name=f'🔹 **Debug:** `@debug` or `/debug`',
                             value='This command will check the required permissions in the channel it is used and'
                                   'generate a short report with suggestions on your next actions.'
                                   'If you are stuck, please visit the support discord server.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Mention:** `@mention` | `@mention prefix`',
+            embed.add_field(name=f'🔹 **Mention:** `@mention` | `@mention prefix` or `/mention <tag>`',
                             value='This is a prefix independent command to retrieve your prefix in case you changed '
                                   'and forgot it. More `@mention` tags might be added in the future.',
                             inline=False)
@@ -231,7 +236,7 @@ class Help(commands.Cog):
             embed.add_field(name='🔹 **Github**',
                             value='The full python source code is on my Github: https://github.com/RJ1002/pollmaster/tree/slash',
                             inline=False)
-            embed.add_field(name='**Thanks for using Pollmaster!** 💗', value='Newti RJGamer1002', inline=False)
+            embed.add_field(name='**Thanks for using Pollmaster!** 💗', value='Newti RJGame1002', inline=False)
         else:
             return None
 
@@ -246,7 +251,7 @@ class Help(commands.Cog):
             return
 
         if not ctx.message.channel.permissions_for(server.me).embed_links:
-            await ctx.send("Missing permissions. Type \"@debug.\"")
+            await ctx.send("Missing permissions. Type \"/debug.\"")
             return
 
         pre = await get_server_pre(self.bot, server)
@@ -264,7 +269,8 @@ class Help(commands.Cog):
             await ctx.message.delete()
         except PermissionError:
             pass
-
+            
+            
     # @mention and @debug commands
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -305,7 +311,6 @@ class Help(commands.Cog):
                     await channel.send(pre)
                 else:
                     await channel.send(f'Tag "{tag}" not found. Type `@{self.bot.user.name} mention` for a list of tags.')
-
             if message.content.startswith(f"<@{self.bot.user.id}> debug"):
                 channel = message.channel
                 if not isinstance(channel, discord.TextChannel):
@@ -367,16 +372,17 @@ class Help(commands.Cog):
                                   'visit the support discord server.'
 
                 await channel.send(status_msg)
-    @commands.hybrid_command(name="debug", description="run debug")
+
+    @app_commands.command(name="debug", description="run debug")
     async def pmdebug(self, ctx):
         print(self.bot.user.name)
         if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.send("`debug` can only be used in a server text channel.")
+            await ctx.response.send_message("`debug` can only be used in a server text channel.")
             return
 
         guild = ctx.guild
         if not guild:
-            await ctx.send("Could not determine your server. Run the command in a server text channel.")
+            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.")
             return
 
         status_msg = ''
@@ -425,28 +431,42 @@ class Help(commands.Cog):
         else:
             status_msg += 'Please try to fix the issues above. \nIf you are still having problems, ' \
                           'visit the support discord server.'
-        await ctx.send(status_msg)
-        
-    @commands.hybrid_command(name="mention", description="run mention")
-    async def pmmention(self, ctx, *, tag=None):
-        ##channel = message.channel
+        await ctx.response.send_message(status_msg)
+    tag = str
+    @app_commands.command(name="mention", description="run mention")
+    @app_commands.describe(
+        tag='options: prefix',
+    )
+    async def pmmention(self, ctx, *, tag: tag = None):
         if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.send("/mention can only be used in a server text channel.")
+            await ctx.response.send_message("`/mention` can only be used in a server text channel.")
             return
 
         guild = ctx.guild
         if not guild:
-            await ctx.send("Could not determine your server.")
+            await ctx.response.send_message("Could not determine your server.")
             return
         if tag == "prefix":
             pre = await get_server_pre(self.bot, guild)
-            # await channel.send(f'The prefix for this server/channel is: \n {pre} \n To change it type: \n'
-            #                    f'{pre}prefix <new_prefix>')
-            await ctx.send(pre)
+            await ctx.response.send_message(f'The prefix for this server/channel is: \n {pre} \n To change it type: \n'
+                                f'{pre}prefix <new_prefix>')
+            #await ctx.response.send_message(pre)
         elif tag == None:
-            await ctx.send("The following mention tags are available:\n🔹 mention prefix")
+            await ctx.response.send_message("The following mention tags are available:\n🔹 prefix")
         else:
-            await ctx.send(f'Tag "{tag}" not found. Type `/mention` for a list of tags.')
+            await ctx.response.send_message(f'Tag "{tag}" not found. Type `/mention` for a list of tags.')
+    @app_commands.command(name="ping", description="send a ping to bot")
+    async def pmping(self, ctx):
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.response.send_message("`/ping` can only be used in a server text channel.")
+            return
+        guild = ctx.guild
+        if not guild:
+            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.")
+            return
+        else:
+            await ctx.response.send_message(f'Pong! In {round(ctx.client.latency * 1000)}ms')
+    
 
 async def setup(bot):
     global logger

@@ -192,9 +192,11 @@ class PollControls(commands.Cog):
     #     p = await Poll.load_from_db(self.bot, str(server.id), 'test', ctx=ctx)
     #     print(await Vote.load_number_of_voters_for_poll(self.bot, p.id))
 
-    @commands.hybrid_command(name="activate")
+    @commands.hybrid_command(name="activate", description="Activate a prepared poll.")
+    @app_commands.describe(
+        short='Choose name of poll to activate',
+    )
     async def activate(self, ctx, *, short=None):
-        """Activate a prepared poll. Parameter: <label>"""
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
@@ -229,9 +231,11 @@ class PollControls(commands.Cog):
                 await self.say_error(ctx, error)
                 await ctx.invoke(self.show, 'prepared')
 
-    @commands.hybrid_command(name="delete")
+    @commands.hybrid_command(name="delete", description="Delete a poll.")
+    @app_commands.describe(
+        short='Choose name of poll to delete',
+    )
     async def delete(self, ctx, *, short=None):
-        """Delete a poll. Parameter: <label>"""
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
@@ -268,9 +272,11 @@ class PollControls(commands.Cog):
                 footer = f'Type {pre}show to display all polls'
                 await self.say_error(ctx, error, footer)
 
-    @commands.hybrid_command(name="close")
+    @commands.hybrid_command(name="close", description="Close a poll.")
+    @app_commands.describe(
+        short='Choose name of poll to close',
+    )
     async def close(self, ctx, *, short=None):
-        """Close a poll. Parameter: <label>"""
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
@@ -302,9 +308,11 @@ class PollControls(commands.Cog):
                 await self.say_error(ctx, error)
                 await ctx.invoke(self.show)
 
-    @commands.hybrid_command(name="copy")
+    @commands.hybrid_command(name="copy", description="Copy a poll.")
+    @app_commands.describe(
+        short='Choose name of poll to copy',
+    )
     async def copy(self, ctx, *, short=None):
-        """Copy a poll. Parameter: <label>"""
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
@@ -327,9 +335,11 @@ class PollControls(commands.Cog):
                 await self.say_error(ctx, error)
                 await ctx.invoke(self.show)
 
-    @commands.hybrid_command(name="export")
+    @commands.hybrid_command(name="export", description="Export a poll.")
+    @app_commands.describe(
+        short='Choose name of poll to export',
+    )
     async def export(self, ctx, *, short=None):
-        """Export a poll. Parameter: <label>"""
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
@@ -349,6 +359,7 @@ class PollControls(commands.Cog):
                     await self.say_error(ctx, error_text)
                 else:
                     # sending file
+                    await ctx.send(f'Sending you the requested export of "{short}". check your DM')
                     file_name = await p.export()
                     if file_name is not None:
                         await ctx.message.author.send('Sending you the requested export of "{}".'.format(p.short),
@@ -369,11 +380,11 @@ class PollControls(commands.Cog):
                 await self.say_error(ctx, error)
                 await ctx.invoke(self.show)
 
-    @commands.hybrid_command(name="show")
+    @commands.hybrid_command(name="show", description="Show a list of open polls or show a specific poll.")
+    @app_commands.describe(
+        short='Parameters: "open" (default), "closed", "prepared" or <label>',
+    )
     async def show(self, ctx, short='open', start=0):
-        """Show a list of open polls or show a specific poll.
-        Parameters: "open" (default), "closed", "prepared" or <label>"""
-
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
@@ -479,9 +490,8 @@ class PollControls(commands.Cog):
             await self.say_error(ctx, error)
             await ctx.invoke(self.show)
 
-    @commands.hybrid_command(name="cmd")
+    @commands.hybrid_command(name="cmd", description="The old, command style way paired with the wizard.")
     async def cmd(self, ctx, *, cmd=None):
-        """The old, command style way paired with the wizard."""
         # await self.say_embed(ctx, say_text='This command is temporarily disabled.')
 
         server = await ask_for_server(self.bot, ctx.message)
@@ -571,9 +581,11 @@ class PollControls(commands.Cog):
             logger.error("ERROR IN pm!cmd")
             logger.exception(error)
 
-    @commands.hybrid_command(name="quick")
+    @commands.hybrid_command(name="quick", description="Create a quick poll with just a question and some options.")
+    @app_commands.describe(
+        cmd='Parameters: <Question> (optional)',
+    )
     async def quick(self, ctx, *, cmd=None):
-        """Create a quick poll with just a question and some options. Parameters: <Question> (optional)"""
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
@@ -593,9 +605,11 @@ class PollControls(commands.Cog):
         if poll:
             await poll.post_embed(poll.channel)
 
-    @commands.hybrid_command(name="prepare")
+    @commands.hybrid_command(name="prepare", description="Prepare a poll to use later.")
+    @app_commands.describe(
+        cmd='Parameters: <Question> (optional)',
+    )
     async def prepare(self, ctx, *, cmd=None):
-        """Prepare a poll to use later. Parameters: <Question> (optional)"""
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
@@ -617,9 +631,11 @@ class PollControls(commands.Cog):
         if poll:
             await poll.post_embed(ctx.message.author)
 
-    @commands.hybrid_command(name="advanced")
+    @commands.hybrid_command(name="advanced", description="Poll with more options.")
+    @app_commands.describe(
+        cmd='Parameters: <Question> (optional)',
+    )
     async def advanced(self, ctx, *, cmd=None):
-        """Poll with more options. Parameters: <Question> (optional)"""
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
@@ -640,9 +656,11 @@ class PollControls(commands.Cog):
         if poll:
             await poll.post_embed(poll.channel)
 
-    @commands.hybrid_command(name="new")
+    @commands.hybrid_command(name="new", description="Start the poll wizard to create a new poll step by step." )
+    @app_commands.describe(
+        cmd='Parameters: <Question> (optional)',
+    )
     async def new(self, ctx, *, cmd=None):
-        """Start the poll wizard to create a new poll step by step. Parameters: <Question> (optional)"""
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
