@@ -231,10 +231,10 @@ class Help(commands.Cog):
                             inline=False)
             embed.add_field(name='🔹 **Support Server**',
                             value='If you need help with pollmaster, want to try him out or would like to give feedback '
-                                  'to the developer, feel free to join the support server: https://discord.gg/4VFepC7',
+                                  'to the developer, feel free to join the support server: https://discord.gg/sjrDM6WES2',
                             inline=False)
             embed.add_field(name='🔹 **Github**',
-                            value='The full python source code is on my Github: https://github.com/RJ1002/pollmaster/tree/slash',
+                            value='The full python source code is on my Github: https://github.com/RJ1002/pollmaster',
                             inline=False)
             embed.add_field(name='**Thanks for using Pollmaster!** 💗', value='Newti RJGame1002', inline=False)
         else:
