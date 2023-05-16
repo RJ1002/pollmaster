@@ -29,9 +29,7 @@ bot_config = {
     'fetch_offline_members': False,
     'max_messages': 15000
 }
-intents = discord.Intents.all()
-client = discord.Client(intents=intents)
-tree = app_commands.CommandTree(client)
+intents = discord.Intents.default()
 intents.messages = True
 intents.members = True
 intents.reactions = True
@@ -88,6 +86,10 @@ async def on_message(message):
 
 @bot.event
 async def on_ready():
+    # load emoji list
+    with open('utils/emoji-compact.json', encoding='utf-8') as emojson:
+        bot.emoji_dict = json.load(emojson)
+        
     global syncOnce
     await bot.wait_until_ready()
     if not syncOnce:
@@ -97,12 +99,6 @@ async def on_ready():
         
     bot.owner = SETTINGS.owner_id
     
-
-
-    # load emoji list
-    with open('utils/emoji-compact.json', encoding='utf-8') as emojson:
-        bot.emoji_dict = json.load(emojson)
-
     # # check discord server configs
     # try:
     #     db_server_ids = [entry['_id'] async for entry in bot.db.config.find({}, {})]
