@@ -45,7 +45,7 @@ class Help(commands.Cog):
 
     def get_help_embed(self, page, pre):
 
-        title = f' Pollmaster Help - React with an emoji to learn more about a topic!'
+        title = f' RT Pollmaster Help - React with an emoji to learn more about a topic!'
         embed = discord.Embed(title='', description='', colour=SETTINGS.color)
         embed.set_author(name=title, icon_url=SETTINGS.author_icon)
         embed.set_footer(text='Use reactions to navigate the help. This message will self-destruct in 5 minutes.')
@@ -96,7 +96,7 @@ class Help(commands.Cog):
                             inline=False
                             )
             # ABOUT
-            embed.add_field(name='💖 About Pollmaster',
+            embed.add_field(name='💖 About RT Pollmaster',
                             value='More infos about Pollmaster, the developer, where to go for further help and how you can support us.',
                             inline=False)
 
@@ -218,25 +218,25 @@ class Help(commands.Cog):
                             inline=False)
 
         elif page == '💖':
-            embed.add_field(name='💖 Pollmaster 💖',
+            embed.add_field(name='💖 RT Pollmaster 💖',
                             value='If you enjoy the bot, you can show your appreciation by giving him an upvote on Discordbots.',
                             inline=False)
             embed.add_field(name='🔹 **Developer**',
-                            value='Pollmaster is developed by Newti#0654'
-                                  '\nmodifed by RJGamer1002#8253',
+                            value='Original code by Newti#0654'
+                                  '\nmodifed/fix/improved by RJGamer1002#8253',
                             inline=False)
             embed.add_field(name='🔹 **Support**',
-                            value='You can support Pollmaster by sending an upvote his way or by clicking the donate link '
-                                  'on the discordbots page:\n not enabled',
+                            value='You can support RT Pollmaster by sending an upvote his way or by clicking the donate link '
+                                  'on the discordbots page:\n not available',
                             inline=False)
             embed.add_field(name='🔹 **Support Server**',
-                            value='If you need help with pollmaster, want to try him out or would like to give feedback '
+                            value='If you need help with RT Pollmaster, want to try him out or would like to give feedback '
                                   'to the developer, feel free to join the support server: https://discord.gg/sjrDM6WES2',
                             inline=False)
             embed.add_field(name='🔹 **Github**',
                             value='The full python source code is on my Github: https://github.com/RJ1002/pollmaster',
                             inline=False)
-            embed.add_field(name='**Thanks for using Pollmaster!** 💗', value='Newti RJGame1002', inline=False)
+            embed.add_field(name='**Thanks for using RT Pollmaster!** 💗', value='Newti, RJGame1002', inline=False)
         else:
             return None
 
@@ -251,7 +251,7 @@ class Help(commands.Cog):
             return
 
         if not ctx.message.channel.permissions_for(server.me).embed_links:
-            await ctx.send("Missing permissions. Type \"/debug.\"")
+            await ctx.send("Missing permissions. Type \"/debug.\"", delete_after=60)
             return
 
         pre = await get_server_pre(self.bot, server)
@@ -266,7 +266,7 @@ class Help(commands.Cog):
             rct = await self.embed_list_reaction_handler(ctx, page, pre, msg)
         # cleanup
         try:
-            await ctx.message.delete()
+            await ctx.message.delete(delay=1)
         except PermissionError:
             pass
             
@@ -375,6 +375,7 @@ class Help(commands.Cog):
 
     @app_commands.command(name="debug", description="run debug")
     async def pmdebug(self, ctx):
+        print("debug command")
         print(self.bot.user.name)
         if not isinstance(ctx.channel, discord.TextChannel):
             await ctx.response.send_message("`debug` can only be used in a server text channel.", delete_after=60)
