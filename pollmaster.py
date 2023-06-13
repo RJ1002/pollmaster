@@ -152,6 +152,7 @@ async def on_command_error(ctx, e):
 
         if SETTINGS.msg_errors:
             # send discord message for unexpected errors
+            error_msg = bot.get_user(bot.owner)
             e = discord.Embed(
                 title=f"Error With command: {ctx.command.name}",
                 description=f"```py\n{type(e).__name__}: {str(e)}\n```\n\nContent:{ctx.message.content}"
@@ -159,7 +160,7 @@ async def on_command_error(ctx, e):
                             f'\n\tAuthor: @{ctx.message.author}',
                 timestamp=ctx.message.created_at
             )
-            await ctx.send(f'<@!{bot.owner}>', embed=e)
+            await error_msg.send(embed=e)
 
         # if SETTINGS.mode == 'development':
         # raise e
