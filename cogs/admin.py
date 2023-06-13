@@ -14,16 +14,20 @@ class Admin(commands.Cog):
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
-            await ctx.reply("Only the owner can use this module. Join the support discord server if you are having "
-                           f"any problems. This usage has been logged.")
+            await ctx.reply("Only the bot owner can use this module. Join the support discord server if you are having "
+                           f"any problems. This usage has been logged.", delete_after=60)
             logger.warning(f'User {ctx.author} ({ctx.author.id}) has tried to access a restricted '
-                           f'command via {ctx.message.content}.')
+                           f'command in guild: {ctx.author.guild} ({ctx.author.guild.id}). command used: `/reload` or `pm!reload`')
+            #send a DM to bot owner
+            warning = self.bot.get_user(self.bot.owner)
+            await warning.send(f'User {ctx.author} ({ctx.author.id}) has tried to access a restricted '
+                           f'command in guild: {ctx.author.guild} ({ctx.author.guild.id}). command used: `/reload` or `pm!reload`')
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.reply("Missing a required argument for this command.")
+            await ctx.reply("Missing a required argument for this command.", delete_after=60)
         else:
             logger.warning(error)
 
-    @commands.hybrid_command(aliases=['r'], description="Reloads cogs")
+    @commands.hybrid_command(aliases=['r'], description="Reloads cogs (bot owner only)")
     @app_commands.describe(
         cog='options: config, poll_controls, help, db_api, admin',
     )
@@ -55,10 +59,13 @@ class Admin(commands.Cog):
                 reply = f'Extension "cogs.{cog}" failed to start.'
         finally:
             logger.info(reply)
-            await ctx.reply(reply)
+            await ctx.reply(reply, delete_after=60)
             
     id = str
-    @app_commands.command(name="guildleave", description="make bot leave a specified guild")
+    @app_commands.command(name="guildleave", description="leaves a specified guild (bot owner only)")
+    @app_commands.describe(
+        id='enter guild id to leave',
+    )
     async def guildleave(self, ctx, *, id: id = None):
         result = await self.bot.db.config.find_one({'_id': id})
         if not isinstance(ctx.channel, discord.TextChannel):
@@ -69,10 +76,14 @@ class Admin(commands.Cog):
             await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
         if not self.bot.owner == ctx.user.id:
-            await ctx.response.send_message("Only the owner can use this module. Join the support discord server if you are having "
+            await ctx.response.send_message("Only the bot owner can use this module. Join the support discord server if you are having "
                            f"any problems. This usage has been logged.", delete_after=60)
             logger.warning(f'User {ctx.user} ({ctx.user.id}) has tried to access a restricted '
-                           f'command via /guildleave.')
+                           f'command in guild: {ctx.user.guild} ({ctx.user.guild.id}). command used: `/guildleave`')
+            #send a DM to bot owner
+            warning = self.bot.get_user(self.bot.owner)
+            await warning.send(f'User {ctx.user} ({ctx.user.id}) has tried to access a restricted '
+                           f'command in guild: {ctx.user.guild} ({ctx.user.guild.id}). command used: `/guildleave`')
             return
         if not id:
             await ctx.response.send_message(f'you need to choose a guild id! ', delete_after=60)
