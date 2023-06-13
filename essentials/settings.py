@@ -10,10 +10,10 @@ class Settings:
         self.author_icon = "https://i.imgur.com/TYbBtwB.jpg" #tag
         self.report_icon = "https://i.imgur.com/YksGRLN.png" #report
         self.owner_id = 183940132129210369
-        self.msg_errors = False
+        self.msg_errors = False #send a DM to bot owner about a error
         self.log_errors = True
         self.invite_link = \
-            'https://discord.com/api/oauth2/authorize?client_id=687418918658375695&permissions=1073867840&scope=bot'
+            'https://discord.com/oauth2/authorize?client_id=753217458029985852&permissions=275951774784&scope=bot%20applications.commands'
 
         self.load_secrets()
 
