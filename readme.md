@@ -1,4 +1,4 @@
-# Pollmaster V 2.5
+# Pollmaster V 2.5.5
 
 - [click here for instructions to install on windows.](https://github.com/RJ1002/pollmaster/blob/slash/setup.md) (work in progress) 
 
@@ -54,5 +54,5 @@ To grant users without "Manage Server" poll creation access to the bot, create a
 
 Join the support discord server by clicking the button on the top of the page.
 
-[![Discord Bots](https://discordbots.org/api/widget/444514223075360800.svg)](https://discordbots.org/bot/444514223075360800)
+[![Discord Bots](https://top.gg/api/widget/753217458029985852.svg)](https://top.gg/bot/753217458029985852)
 
