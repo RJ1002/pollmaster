@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import datetime as dt
 
 import discord
 from discord.ext import commands
 from discord import app_commands
+from discord.ui import Button, View
 
 from essentials.multi_server import get_server_pre, ask_for_server
 from essentials.settings import SETTINGS
@@ -250,8 +252,9 @@ class Help(commands.Cog):
         if not server:
             return
 
-        if not ctx.message.channel.permissions_for(server.me).embed_links:
-            await ctx.send("Missing permissions. Type \"/debug.\"", delete_after=60)
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
 
         pre = await get_server_pre(self.bot, server)
