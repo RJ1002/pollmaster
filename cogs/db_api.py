@@ -19,9 +19,9 @@ class DiscordBotsOrgAPI(commands.Cog):
     def cog_unload(self):
         self.update_stats.cancel()
 
-    @tasks.loop(minutes=10.0)
+    @tasks.loop(minutes=30.0)
     async def update_stats(self):
-        """This function runs every 10 minutes to automatically update your server count"""
+        """This function runs every 30 minutes to automatically update your server count"""
         logger.info('Attempting to post server count')
         try:
             await self.dblpy.post_guild_count()
