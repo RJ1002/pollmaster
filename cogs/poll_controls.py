@@ -200,7 +200,10 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
-
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the activate command. \n' \
@@ -238,6 +241,10 @@ class PollControls(commands.Cog):
     async def delete(self, ctx, *, short=None):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
+            return
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
@@ -280,7 +287,10 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
-
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the close command. \n' \
@@ -316,7 +326,10 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
-
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the copy command. \n' \
@@ -343,7 +356,10 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
-
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the export command. \n' \
@@ -388,7 +404,10 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
-
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
         if short in ['open', 'closed', 'prepared']:
             query = None
             if short == 'open':
@@ -433,6 +452,10 @@ class PollControls(commands.Cog):
     async def draw(self, ctx, short=None, opt=None):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
+            return
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
         pre = await get_server_pre(self.bot, ctx.message.guild)
         if opt is None:
@@ -496,6 +519,10 @@ class PollControls(commands.Cog):
 
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
+            return
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
         pre = await get_server_pre(self.bot, server)
         try:
@@ -589,7 +616,10 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
-
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
         async def route(poll):
             await poll.set_name(ctx, force=cmd)
             await poll.set_short(ctx, force=str(await generate_word(self.bot, server.id)))
@@ -613,7 +643,10 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
-
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
         async def route(poll):
             await poll.set_name(ctx, force=cmd)
             await poll.set_short(ctx)
@@ -639,7 +672,10 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
-
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
         async def route(poll):
             await poll.set_name(ctx, force=cmd)
             await poll.set_short(ctx)
@@ -664,7 +700,10 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
-
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
         async def route(poll):
             await poll.set_name(ctx, force=cmd)
             await poll.set_short(ctx)
