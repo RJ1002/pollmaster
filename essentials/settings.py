@@ -10,7 +10,7 @@ class Settings:
         self.author_icon = "https://i.imgur.com/TYbBtwB.jpg" #tag
         self.report_icon = "https://i.imgur.com/YksGRLN.png" #report
         self.owner_id = 183940132129210369
-        self.msg_errors = False #send a DM to bot owner about a error
+        self.msg_errors = False #send a DM to bot owner about a error(make sure you edit self.owner_id so the bot know who the bot owner is)
         self.log_errors = True
         self.invite_link = \
             'https://discord.com/oauth2/authorize?client_id=753217458029985852&permissions=275951774784&scope=bot%20applications.commands'
