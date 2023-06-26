@@ -44,7 +44,12 @@ async def embed_list_paginated(ctx, bot, pre, items, item_fct, base_embed, foote
     try:
         reaction, user = await bot.wait_for('reaction_add', timeout=120, check=check)
     except asyncio.TimeoutError:
-        pass
+        try:
+            await msg.delete()
+            await ctx.message.delete()
+        except discord.errors.NotFound:
+            # message already deleted
+            pass
     else:
         # redirect on reaction
         if reaction is None:
