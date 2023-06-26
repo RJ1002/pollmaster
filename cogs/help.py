@@ -268,9 +268,8 @@ class Help(commands.Cog):
                 page = rct.emoji
                 msg = rct.message
             rct = await self.embed_list_reaction_handler(ctx, page, pre, msg)
-        except PermissionError:
+        else:
             pass
-            
             
     # @mention and @debug commands
     @commands.Cog.listener()
