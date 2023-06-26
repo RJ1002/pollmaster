@@ -36,6 +36,7 @@ class Help(commands.Cog):
         except asyncio.TimeoutError:
             try:
                 await msg.delete()
+                await ctx.message.delete()
             except discord.errors.NotFound:
                 # message already deleted
                 pass
@@ -267,9 +268,6 @@ class Help(commands.Cog):
                 page = rct.emoji
                 msg = rct.message
             rct = await self.embed_list_reaction_handler(ctx, page, pre, msg)
-        # cleanup
-        try:
-            await ctx.message.delete(delay=1)
         except PermissionError:
             pass
             
