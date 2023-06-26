@@ -375,7 +375,7 @@ class PollControls(commands.Cog):
                     await self.say_error(ctx, error_text)
                 else:
                     # sending file
-                    await ctx.send(f'Sending you the requested export of "{short}". check your DM')
+                    await ctx.reply(f'Sending you the requested export of "{short}". check your DM')
                     file_name = await p.export()
                     if file_name is not None:
                         await ctx.message.author.send('Sending you the requested export of "{}".'.format(p.short),
