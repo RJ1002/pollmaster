@@ -971,7 +971,7 @@ class Poll:
                 winning_options.append(o)
         deadline_str = await self.get_deadline(string=True)
         export = (f'--------------------------------------------\n'
-                  f'POLLMASTER DISCORD EXPORT\n'
+                  f'RT POLLMASTER DISCORD EXPORT\n'
                   f'--------------------------------------------\n'
                   f'Server name (ID): {self.server.name} ({self.server.id})\n'
                   f'Owner of the poll: {self.author.name}\n'
@@ -1089,9 +1089,9 @@ class Poll:
         export += ('--------------------------------------------\n'
                    'BOT DETAILS\n'
                    '--------------------------------------------\n'
-                   'Creator: Newti#0654\n'
-                   'Link to invite, vote for or support Pollmaster:\n'
-                   'https://discordbots.org/bot/444514223075360800\n'
+                   'Creator: RJGamer1002#8253\n'
+                   'Link to invite, vote for or support RT Pollmaster:\n'
+                   'https://top.gg/bot/753217458029985852\n'
                    '--------------------------------------------\n'
                    'END OF FILE\n'
                    '--------------------------------------------\n')
