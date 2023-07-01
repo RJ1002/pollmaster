@@ -18,7 +18,7 @@ Here is a quick list of features:
 - You can hide the current vote count to prevent sheeping
 - Polls are persistent and will be available until you delete them
 - Personalised info for each poll by reacting with ❔
-- Everything can be done in private chat with the bot to reduce spam on the server
+- ~~Everything can be done in private chat with the bot to reduce spam on the server~~ (been disabled for now)
 - Full multi-server support!
 - For advanced users: Commandline support to create a full poll in one line -> pm!cmd help
 
