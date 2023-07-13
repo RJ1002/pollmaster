@@ -35,7 +35,7 @@ intents.members = True
 intents.reactions = True
 intents.message_content = True
 intents.guilds = True
-intents.presences = True
+intents.presences = False
 bot = commands.AutoShardedBot(**bot_config, intents=intents)
 bot.remove_command('help')
 
@@ -60,6 +60,7 @@ ch.setFormatter(formatter)
 # add the handlers to the logger
 logger.addHandler(fh)
 logger.addHandler(ch)
+
 extensions = ['cogs.config', 'cogs.poll_controls', 'cogs.help', 'cogs.db_api', 'cogs.admin']
 async def setup(bot):
     for ext in extensions:
