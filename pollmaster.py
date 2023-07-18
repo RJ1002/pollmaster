@@ -29,13 +29,12 @@ bot_config = {
     'fetch_offline_members': False,
     'max_messages': 15000
 }
-intents = discord.Intents.default()
+intents = discord.Intents.none()
 intents.messages = True
-intents.members = True
+intents.message_content = False
+intents.members = False
 intents.reactions = True
-intents.message_content = True
 intents.guilds = True
-intents.presences = False
 bot = commands.AutoShardedBot(**bot_config, intents=intents)
 bot.remove_command('help')
 
@@ -153,7 +152,7 @@ async def on_command_error(ctx, e):
 
         if SETTINGS.msg_errors:
             # send discord message for unexpected errors
-            error_msg = bot.get_user(bot.owner)
+            error_msg = await bot.fetch_user(bot.owner)
             e = discord.Embed(
                 title=f"Error With command: {ctx.command.name}",
                 description=f"```py\n{type(e).__name__}: {str(e)}\n```\n\nContent:{ctx.message.content}"
