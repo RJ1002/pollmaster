@@ -19,7 +19,7 @@ class Admin(commands.Cog):
             logger.warning(f'User {ctx.author} ({ctx.author.id}) has tried to access a restricted '
                            f'command in guild: {ctx.author.guild} ({ctx.author.guild.id}). command used: `/reload` or `pm!reload`')
             #send a DM to bot owner
-            warning = self.bot.get_user(self.bot.owner)
+            warning = await self.bot.fetch_user(self.bot.owner)
             await warning.send(f'User {ctx.author} ({ctx.author.id}) has tried to access a restricted '
                            f'command in guild: {ctx.author.guild} ({ctx.author.guild.id}). command used: `/reload` or `pm!reload`')
         elif isinstance(error, commands.MissingRequiredArgument):
@@ -81,7 +81,7 @@ class Admin(commands.Cog):
             logger.warning(f'User {ctx.user} ({ctx.user.id}) has tried to access a restricted '
                            f'command in guild: {ctx.user.guild} ({ctx.user.guild.id}). command used: `/guildleave`')
             #send a DM to bot owner
-            warning = self.bot.get_user(self.bot.owner)
+            warning = await self.bot.fetch_user(self.bot.owner)
             await warning.send(f'User {ctx.user} ({ctx.user.id}) has tried to access a restricted '
                            f'command in guild: {ctx.user.guild} ({ctx.user.guild.id}). command used: `/guildleave`')
             return
