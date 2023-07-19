@@ -204,6 +204,13 @@ class PollControls(commands.Cog):
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`activate` can only be used in a server text channel.", delete_after=60)
+            return
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the activate command. \n' \
@@ -245,6 +252,14 @@ class PollControls(commands.Cog):
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`delete` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
@@ -291,6 +306,14 @@ class PollControls(commands.Cog):
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`close` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the close command. \n' \
@@ -330,6 +353,14 @@ class PollControls(commands.Cog):
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`copy` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the copy command. \n' \
@@ -359,6 +390,14 @@ class PollControls(commands.Cog):
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`export` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
@@ -407,6 +446,14 @@ class PollControls(commands.Cog):
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`show` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
         if short in ['open', 'closed', 'prepared']:
             query = None
@@ -457,6 +504,14 @@ class PollControls(commands.Cog):
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`draw` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
         pre = await get_server_pre(self.bot, ctx.message.guild)
         if opt is None:
             error = f'No answer specified please use the following syntax: \n' \
@@ -500,7 +555,7 @@ class PollControls(commands.Cog):
             # print(voter_list)
             winner_id = random.choice(voter_list)
             # winner = server.get_member(int(winner_id))
-            winner = self.bot.get_user(int(winner_id))
+            winner = await self.bot.fetch_user(int(winner_id))
             if not winner:
                 error = f'Invalid winner drawn (id: {winner_id}).'
                 await self.say_error(ctx, error)
@@ -523,6 +578,14 @@ class PollControls(commands.Cog):
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`cmd` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
         pre = await get_server_pre(self.bot, server)
         try:
@@ -610,9 +673,10 @@ class PollControls(commands.Cog):
 
     @commands.hybrid_command(name="quick", description="Create a quick poll with just a question and some options.")
     @app_commands.describe(
-        cmd='Parameters: <Question> (optional)',
+        name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
+        options_reaction=f'**Choose the options/answers for your poll.** Either chose a preset of options or type your own options, separated by commas. **1** - :white_check_mark: :negative_squared_cross_mark: **2** - :thumbsup: :zipper_mouth: :thumbsdown: **3** - :heart_eyes: :thumbsup: :zipper_mouth:  :thumbsdown: :nauseated_face: **4** - in favour, against, abstaining. Example for custom options: **apple juice, banana ice cream, kiwi slices**',
     )
-    async def quick(self, ctx, *, cmd=None):
+    async def quick(self, ctx, *, name: str, options_reaction: str):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
@@ -620,11 +684,19 @@ class PollControls(commands.Cog):
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`quick` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
         async def route(poll):
-            await poll.set_name(ctx, force=cmd)
+            await poll.set_name(ctx, force=name)
             await poll.set_short(ctx, force=str(await generate_word(self.bot, server.id)))
             await poll.set_anonymous(ctx, force='no')
-            await poll.set_options_reaction(ctx)
+            await poll.set_options_reaction(ctx, force=options_reaction)
             await poll.set_multiple_choice(ctx, force='1')
             await poll.set_hide_vote_count(ctx, force='no')
             await poll.set_roles(ctx, force='all')
@@ -637,9 +709,23 @@ class PollControls(commands.Cog):
 
     @commands.hybrid_command(name="prepare", description="Prepare a poll to use later.")
     @app_commands.describe(
-        cmd='Parameters: <Question> (optional)',
+        name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
+        short='**Now type a unique one word identifier, a label, for your poll.** This label will be used to refer to the poll. Keep it short and significant.',
+        preparation='This poll will be created inactive. You can either schedule activation at a certain date or activate it manually. **Type `0` to activate it manually or tell me when you want to activate it** by typing an absolute or relative date. You can specify a timezone if you want. Examples: `in 2 days`, `next week CET`, `may 3rd 2019`, `9.11.2019 9pm EST` ',
+        anonymous='**Do you want your poll to be anonymous?** (0 - No, 1 - Yes) An anonymous poll has the following effects: 🔹 You will never see who voted for which option 🔹 Once the poll is closed, you will see who participated (but not their choice)',
+        options_reaction=f'**Choose the options/answers for your poll.** Either chose a preset of options or type your own options, separated by commas. **1** - :white_check_mark: :negative_squared_cross_mark: **2** - :thumbsup: :zipper_mouth: :thumbsdown: **3** - :heart_eyes: :thumbsup: :zipper_mouth:  :thumbsdown: :nauseated_face: **4** - in favour, against, abstaining. Example for custom options: **apple juice, banana ice cream, kiwi slices**',
+        survey_flags='**Which options should ask the user for a custom answer?** Type `0` to skip survey options. If you want multiple survey options, separate the numbers with a comma. `0 - None (classic poll)`',
+        multiple_choice='**How many options should the voters be able choose?** `0 - No Limit: Multiple Choice` `1  - Single Choice` `2+  - Specify exactly how many Choices` If the maximum choices are reached for a voter, they have to unvote an option before being able to vote for a different one.',
+        hide_vote_count='**Do you want to hide the live vote count?** `0 - No, show it (Default)` `1  - Yes, hide it` You will still be able to see the vote count once the poll is closed. This settings will just hide the vote count while the poll is active.',
+        roles='**Choose which roles are allowed to vote.** Type `0`, `all` or `everyone` to have no restrictions. If you want multiple roles to be able to vote, separate the numbers with a comma.',
+        weights='**Weights allow you to give certain roles more or less effective votes. Type `0` or `none` if you don\'t need any weights.** A weight for the role `moderator` of `2` for example will automatically count the votes of all the moderators twice. To assign weights type the role, followed by a colon, followed by the weight like this: `moderator: 2, newbie: 0.5`',
+        duration='**When should the poll be closed?** If you want the poll to last indefinitely (until you close it), type `0`. Otherwise tell me when the poll should close in relative or absolute terms. You can specify a timezone if you want. Examples: `in 6 hours` or `next week CET` or `aug 15th 5:10` or `15.8.2019 11pm EST`',
     )
-    async def prepare(self, ctx, *, cmd=None):
+    @app_commands.choices(
+        anonymous=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)],
+        hide_vote_count=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)],
+    )
+    async def prepare(self, ctx, *, name: str, short: str, preparation: str, anonymous: discord.app_commands.Choice[int], options_reaction: str, survey_flags: str, multiple_choice: str, hide_vote_count: discord.app_commands.Choice[int], roles: str, weights: str, duration: str):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
@@ -647,18 +733,26 @@ class PollControls(commands.Cog):
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`prepare` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
         async def route(poll):
-            await poll.set_name(ctx, force=cmd)
-            await poll.set_short(ctx)
-            await poll.set_preparation(ctx)
-            await poll.set_anonymous(ctx)
-            await poll.set_options_reaction(ctx)
-            await poll.set_survey_flags(ctx)
-            await poll.set_multiple_choice(ctx)
-            await poll.set_hide_vote_count(ctx)
-            await poll.set_roles(ctx)
-            await poll.set_weights(ctx)
-            await poll.set_duration(ctx)
+            await poll.set_name(ctx, force=name)
+            await poll.set_short(ctx, force=short)
+            await poll.set_preparation(ctx, force=preparation)
+            await poll.set_anonymous(ctx, force=anonymous.name)
+            await poll.set_options_reaction(ctx, force=options_reaction)
+            await poll.set_survey_flags(ctx, force=survey_flags)
+            await poll.set_multiple_choice(ctx, force=multiple_choice)
+            await poll.set_hide_vote_count(ctx, force=hide_vote_count.name)
+            await poll.set_roles(ctx, force=roles)
+            await poll.set_weights(ctx, force=weights)
+            await poll.set_duration(ctx, force=duration)
 
         poll = await self.wizard(ctx, route, server)
         if poll:
@@ -666,9 +760,22 @@ class PollControls(commands.Cog):
 
     @commands.hybrid_command(name="advanced", description="Poll with more options.")
     @app_commands.describe(
-        cmd='Parameters: <Question> (optional)',
+        name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
+        short='**Now type a unique one word identifier, a label, for your poll.** This label will be used to refer to the poll. Keep it short and significant.',
+        anonymous='**Do you want your poll to be anonymous?** (0 - No, 1 - Yes) An anonymous poll has the following effects: 🔹 You will never see who voted for which option 🔹 Once the poll is closed, you will see who participated (but not their choice)',
+        options_reaction=f'**Choose the options/answers for your poll.** Either chose a preset of options or type your own options, separated by commas. **1** - :white_check_mark: :negative_squared_cross_mark: **2** - :thumbsup: :zipper_mouth: :thumbsdown: **3** - :heart_eyes: :thumbsup: :zipper_mouth:  :thumbsdown: :nauseated_face: **4** - in favour, against, abstaining. Example for custom options: **apple juice, banana ice cream, kiwi slices**',
+        survey_flags='**Which options should ask the user for a custom answer?** Type `0` to skip survey options. If you want multiple survey options, separate the numbers with a comma. `0 - None (classic poll)`',
+        multiple_choice='**How many options should the voters be able choose?** `0 - No Limit: Multiple Choice` `1  - Single Choice` `2+  - Specify exactly how many Choices` If the maximum choices are reached for a voter, they have to unvote an option before being able to vote for a different one.',
+        hide_vote_count='**Do you want to hide the live vote count?** `0 - No, show it (Default)` `1  - Yes, hide it` You will still be able to see the vote count once the poll is closed. This settings will just hide the vote count while the poll is active.',
+        roles='**Choose which roles are allowed to vote.** Type `0`, `all` or `everyone` to have no restrictions. If you want multiple roles to be able to vote, separate the numbers with a comma.',
+        weights='**Weights allow you to give certain roles more or less effective votes. Type `0` or `none` if you don\'t need any weights.** A weight for the role `moderator` of `2` for example will automatically count the votes of all the moderators twice. To assign weights type the role, followed by a colon, followed by the weight like this: `moderator: 2, newbie: 0.5`',
+        duration='**When should the poll be closed?** If you want the poll to last indefinitely (until you close it), type `0`. Otherwise tell me when the poll should close in relative or absolute terms. You can specify a timezone if you want. Examples: `in 6 hours` or `next week CET` or `aug 15th 5:10` or `15.8.2019 11pm EST`',
     )
-    async def advanced(self, ctx, *, cmd=None):
+    @app_commands.choices(
+        anonymous=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)],
+        hide_vote_count=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)],
+    )
+    async def advanced(self, ctx, *, name: str, short: str, anonymous: discord.app_commands.Choice[int], options_reaction: str, survey_flags: str, multiple_choice: str, hide_vote_count: discord.app_commands.Choice[int], roles: str, weights: str, duration: str):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
@@ -676,27 +783,42 @@ class PollControls(commands.Cog):
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`advanced` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
         async def route(poll):
-            await poll.set_name(ctx, force=cmd)
-            await poll.set_short(ctx)
-            await poll.set_anonymous(ctx)
-            await poll.set_options_reaction(ctx)
-            await poll.set_survey_flags(ctx)
-            await poll.set_multiple_choice(ctx)
-            await poll.set_hide_vote_count(ctx)
-            await poll.set_roles(ctx)
-            await poll.set_weights(ctx)
-            await poll.set_duration(ctx)
-
+            await poll.set_name(ctx, force=name)
+            await poll.set_short(ctx, force=short)
+            await poll.set_anonymous(ctx, force=anonymous.name)
+            await poll.set_options_reaction(ctx, force=options_reaction)
+            await poll.set_survey_flags(ctx, force=survey_flags)
+            await poll.set_multiple_choice(ctx, force=multiple_choice)
+            await poll.set_hide_vote_count(ctx, force=hide_vote_count.name)
+            await poll.set_roles(ctx, force=roles)
+            await poll.set_weights(ctx, force=weights)
+            await poll.set_duration(ctx, force=duration)
         poll = await self.wizard(ctx, route, server)
         if poll:
             await poll.post_embed(poll.channel)
 
     @commands.hybrid_command(name="new", description="Start the poll wizard to create a new poll step by step." )
     @app_commands.describe(
-        cmd='Parameters: <Question> (optional)',
+        name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
+        short='**Now type a unique one word identifier, a label, for your poll.** This label will be used to refer to the poll. Keep it short and significant.',
+        anonymous='**Do you want your poll to be anonymous?** (0 - No, 1 - Yes) An anonymous poll has the following effects: 🔹 You will never see who voted for which option 🔹 Once the poll is closed, you will see who participated (but not their choice)',
+        options_reaction=f'**Choose the options/answers for your poll.** Either chose a preset of options or type your own options, separated by commas. **1** - :white_check_mark: :negative_squared_cross_mark: **2** - :thumbsup: :zipper_mouth: :thumbsdown: **3** - :heart_eyes: :thumbsup: :zipper_mouth:  :thumbsdown: :nauseated_face: **4** - in favour, against, abstaining. Example for custom options: **apple juice, banana ice cream, kiwi slices**',
+        multiple_choice='**How many options should the voters be able choose?** `0 - No Limit: Multiple Choice` `1  - Single Choice` `2+  - Specify exactly how many Choices` If the maximum choices are reached for a voter, they have to unvote an option before being able to vote for a different one.',
+        duration='**When should the poll be closed?** If you want the poll to last indefinitely (until you close it), type `0`. Otherwise tell me when the poll should close in relative or absolute terms. You can specify a timezone if you want. Examples: `in 6 hours` or `next week CET` or `aug 15th 5:10` or `15.8.2019 11pm EST`',
     )
-    async def new(self, ctx, *, cmd=None):
+    @app_commands.choices(
+        anonymous=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)]
+    )
+    async def new(self, ctx, *, name: str, short: str, anonymous: discord.app_commands.Choice[int], options_reaction: str, multiple_choice: str, duration: str):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
@@ -704,17 +826,25 @@ class PollControls(commands.Cog):
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`new` can only be used in a server text channel.", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
         async def route(poll):
-            await poll.set_name(ctx, force=cmd)
-            await poll.set_short(ctx)
-            await poll.set_anonymous(ctx)
-            await poll.set_options_reaction(ctx)
+            await poll.set_name(ctx, force=name)
+            await poll.set_short(ctx, force=short)
+            await poll.set_anonymous(ctx, force=anonymous.name)
+            await poll.set_options_reaction(ctx, force=options_reaction)
             await poll.set_survey_flags(ctx, force='0')
-            await poll.set_multiple_choice(ctx)
+            await poll.set_multiple_choice(ctx, force=multiple_choice)
             await poll.set_hide_vote_count(ctx, force='no')
             await poll.set_roles(ctx, force='all')
             await poll.set_weights(ctx, force='none')
-            await poll.set_duration(ctx)
+            await poll.set_duration(ctx, force=duration)
 
         poll = await self.wizard(ctx, route, server)
         if poll:
@@ -781,7 +911,7 @@ class PollControls(commands.Cog):
         if isinstance(channel, discord.TextChannel):
             server = channel.guild
             # user = server.get_member(user_id)
-            user = self.bot.get_user(user_id)
+            user = await self.bot.fetch_user(user_id)
             message = self.bot.message_cache.get(message_id)
             if message is None:
                 message = await channel.fetch_message(message_id)
@@ -913,7 +1043,7 @@ class PollControls(commands.Cog):
 
             # created by
             if (p.author != None):
-                created_by = self.bot.get_user(int(p.author.id))
+                created_by = await self.bot.fetch_user(int(p.author.id))
             else:
                 created_by = "<Deleted User>"
             # created_by = server.get_member(int(p.author.id))
@@ -986,7 +1116,7 @@ class PollControls(commands.Cog):
                     c = 0
                     for vote in p.full_votes:
                         # member = server.get_member(int(vote.user_id))
-                        member: discord.Member = self.bot.get_user(int(vote.user_id))
+                        member: discord.Member = await self.bot.fetch_user(int(vote.user_id))
                         if not member or vote.choice != i:
                             continue
                         c += 1
