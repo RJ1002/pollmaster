@@ -1002,7 +1002,7 @@ class Poll:
 
             for user_id in self.unique_participants:
                 # member = self.server.get_member(int(user_id))
-                member = self.bot.get_user(int(user_id))
+                member = await self.bot.fetch_user(int(user_id))
 
                 if not member:
                     name = "<Deleted User>"
@@ -1045,7 +1045,7 @@ class Poll:
 
             for user_id in self.unique_participants:
                 # member = self.server.get_member(int(user_id))
-                member = self.bot.get_user(int(user_id))
+                member = await self.bot.fetch_user(int(user_id))
                 if not member:
                     name = "<Deleted User>"
                 else:
@@ -1125,7 +1125,7 @@ class Poll:
         self.server = self.bot.get_guild(int(d['server_id']))
         self.channel = self.bot.get_channel(int(d['channel_id']))
         if self.server != None:
-            self.author = self.bot.get_user(int(d['author']))
+            self.author = await self.bot.fetch_user(int(d['author']))
             # self.author = self.server.get_member(int(d['author']))
         else:
             self.author = None
