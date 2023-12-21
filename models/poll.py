@@ -8,9 +8,11 @@ import re
 import time
 from string import ascii_lowercase
 from uuid import uuid4
+import traceback
 
 import dateparser
 import discord
+from discord.ui import Button, View, Modal, TextInput, RoleSelect
 import pytz
 import regex
 from bson import ObjectId
@@ -48,6 +50,7 @@ class Poll:
         self.vote_counts_weighted = {}
         self.full_votes = []
         self.unique_participants = set()
+        self.wizard_messages = []
 
         if not load and ctx:
             if server is None:
@@ -123,11 +126,11 @@ class Poll:
                 await self.save_to_db()
         return self.active
 
-    async def wizard_says(self, ctx, text, footer=True):
+    async def wizard_says(self, ctx, text, view, footer=True):
         embed = discord.Embed(title="Poll creation Wizard", description=text, color=SETTINGS.color)
         if footer:
-            embed.set_footer(text="Type `stop` to cancel the wizard.")
-        msg = await ctx.send(embed=embed)
+            embed.set_footer(text="Type `stop` to cancel the wizard. \n Reply to this message or click a button to respond to question")
+        msg = await ctx.reply(embed=embed, view=view)
         self.wizard_messages.append(msg)
         return msg
 
@@ -135,7 +138,7 @@ class Poll:
         if add and message.embeds.__len__() > 0:
             text = message.embeds[0].description + text
         embed = discord.Embed(title="Poll creation Wizard", description=text, color=SETTINGS.color)
-        embed.set_footer(text="Type `stop` to cancel the wizard.")
+        embed.set_footer(text="Type `stop` to cancel the wizard. \n Reply to this message or click a button to respond to question")
         return await message.edit(embed=embed)
 
     async def add_error(self, message, error):
@@ -152,26 +155,101 @@ class Poll:
 
     async def get_user_reply(self, ctx):
         """Pre-parse user input for wizard"""
+        view=View()
         def check(m):
-            return m.author == self.author
+            return m.author == self.author and m.type == discord.MessageType.reply
+        def checkbutton(m):
+             return m.type == discord.InteractionType.component and m.user == self.author
+        def checkmodal(m):
+            return m.type == discord.InteractionType.modal_submit and m.user == self.author
+        done, pending = await asyncio.wait([
+                    self.bot.loop.create_task(self.bot.wait_for('interaction', timeout=600, check=checkmodal)),
+                    self.bot.loop.create_task(self.bot.wait_for('interaction', timeout=600, check=checkbutton)),
+                    self.bot.loop.create_task(self.bot.wait_for('message', timeout=600, check=check))
+                ], return_when=asyncio.FIRST_COMPLETED)
         try:
-            reply = await self.bot.wait_for('message', timeout=600, check=check)
+            #reply = await self.bot.wait_for('message', timeout=600, check=check)
+            reply = done.pop().result()
         except asyncio.TimeoutError:
             raise StopWizard
+        for future in done:
+            future.exception()
+        for future in pending:
+            future.cancel()
 
-        if reply and reply.content:
+        if reply.type == discord.MessageType.reply:
             self.wizard_messages.append(reply)
             if reply.content.startswith(await get_pre(self.bot, reply)):
                 await self.wizard_says(ctx, f'You can\'t use bot commands during the Poll Creation Wizard.\n'
                                        f'Stopping the Wizard and then executing the command:\n`{reply.content}`',
-                                       footer=False)
+                                       footer=False, view=view)
                 raise StopWizard
             elif reply.content.lower() == 'stop':
-                await self.wizard_says(ctx, 'Poll Wizard stopped.', footer=False)
+                await self.wizard_says(ctx, 'Poll Wizard stopped.', footer=False, view=view)
                 raise StopWizard
 
             else:
                 return reply.content
+                
+        elif reply.type == discord.InteractionType.modal_submit:
+           self.wizard_messages.append(reply)
+           if reply.data['components'][0]['components'][0]['value'].startswith(await get_pre(self.bot, reply)):
+               await self.wizard_says(ctx, f'You can\'t use bot commands during the Poll Creation Wizard.\n'
+                                      f'Stopping the Wizard and then executing the command:\n`{reply.data["components"][0]["components"][0]["value"]}`',
+                                      footer=False, view=view)
+               raise StopWizard
+           elif reply.data['components'][0]['components'][0]['value'].lower() == 'stop':
+               await self.wizard_says(ctx, 'Poll Wizard stopped.', footer=False, view=view)
+               raise StopWizard
+           else:
+                return reply.data['components'][0]['components'][0]['value']
+        elif reply.type == discord.InteractionType.component and reply.data['custom_id'] == 'select':
+           self.wizard_messages.append(reply)
+           if reply.data['values'][0].startswith(await get_pre(self.bot, reply)):
+               await self.wizard_says(ctx, f'You can\'t use bot commands during the Poll Creation Wizard.\n'
+                                      f'Stopping the Wizard and then executing the command:\n`{reply.data["values"]}`',
+                                      footer=False, view=view)
+               raise StopWizard
+           elif reply.data['values'][0].lower() == 'stop':
+               await self.wizard_says(ctx, 'Poll Wizard stopped.', view=view,  footer=False)
+               raise StopWizard
+           else:
+               return reply.data['values'][0]
+           
+        #roleselect
+        elif reply.type == discord.InteractionType.component and reply.data['custom_id'] == 'roleselect':
+           role_list = ''
+           role_lastcount = int(len(reply.data['values'])) - 1
+           for i in range(len(reply.data['values'])):
+               
+               if i < role_lastcount:
+                   role_list += f'{ctx.guild.get_role(int(reply.data["values"][i]))}' + ", "
+               if i == role_lastcount:
+                   role_list += f'{ctx.guild.get_role(int(reply.data["values"][i]))}'
+           self.wizard_messages.append(reply)
+           if role_list.startswith(await get_pre(self.bot, reply)):
+               await self.wizard_says(ctx, f'You can\'t use bot commands during the Poll Creation Wizard.\n'
+                                      f'Stopping the Wizard and then executing the command:\n`{reply.data["values"]}`',
+                                      footer=False)
+               raise StopWizard
+           elif role_list.lower() == 'stop':
+               await self.wizard_says(ctx, 'Poll Wizard stopped.', view=view,  footer=False)
+               raise StopWizard
+           else:
+               return role_list
+        
+        elif reply.type == discord.InteractionType.component and reply.data['custom_id'] != 'modal':
+           self.wizard_messages.append(reply)
+           if reply.data['custom_id'].startswith(await get_pre(self.bot, reply)):
+               await self.wizard_says(ctx, f'You can\'t use bot commands during the Poll Creation Wizard.\n'
+                                      f'Stopping the Wizard and then executing the command:\n`{reply.data["custom_id"]}`',
+                                      footer=False)
+               raise StopWizard
+           elif reply.data['custom_id'].lower() == 'stop':
+               await self.wizard_says(ctx, 'Poll Wizard stopped.', view=view,  footer=False)
+               raise StopWizard
+           else:
+               return reply.data['custom_id']
         else:
             raise InvalidInput
 
@@ -188,6 +266,7 @@ class Poll:
 
     async def set_name(self, ctx, force=None):
         """Set the Question / Name of the Poll."""
+        view=self.namebuttons(ctx)
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
@@ -208,8 +287,10 @@ class Poll:
             pass
 
         text = ("**What is the question of your poll?**\n"
-                "Try to be descriptive without writing more than one sentence.")
-        message = await self.wizard_says(ctx, text)
+                "Try to be descriptive without writing more than one sentence.\n"
+                "**NEW!** if you want to go to the next line(indent) you can now use `>>`.\n"
+                "make sure there space between `>>`. example: `test1? >> test2.`")
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -219,6 +300,7 @@ class Poll:
                 else:
                     reply = await self.get_user_reply(ctx)
                 self.name = await get_valid(reply)
+                self.name = regex.sub(" >> ", "\n", self.name)
                 await self.add_vaild(message, self.name)
                 break
             except InvalidInput:
@@ -226,6 +308,7 @@ class Poll:
 
     async def set_short(self, ctx, force=None):
         """Set the label of the Poll."""
+        view=self.shortbuttons(ctx)
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
@@ -251,7 +334,7 @@ class Poll:
 
         text = """Great. **Now type a unique one word identifier, a label, for your poll.**
          This label will be used to refer to the poll. Keep it short and significant."""
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -273,6 +356,7 @@ class Poll:
 
     async def set_preparation(self, ctx, force=None):
         """Set the preparation conditions for the Poll."""
+        view=self.preparationbuttons(ctx)
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
@@ -317,7 +401,7 @@ class Poll:
                 "it manually. **Type `0` to activate it manually or tell me when you want to activate it** by "
                 "typing an absolute or relative date. You can specify a timezone if you want.\n"
                 "Examples: `in 2 days`, `next week CET`, `may 3rd 2019`, `9.11.2019 9pm EST` ")
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -344,6 +428,7 @@ class Poll:
 
     async def set_anonymous(self, ctx, force=None):
         """Determine if poll is anonymous."""
+        view=self.anonymousbuttons(ctx)
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
@@ -373,7 +458,7 @@ class Poll:
                 "An anonymous poll has the following effects:\n"
                 "🔹 You will never see who voted for which option\n"
                 "🔹 Once the poll is closed, you will see who participated (but not their choice)")
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -390,6 +475,7 @@ class Poll:
 
     async def set_multiple_choice(self, ctx, force=None):
         """Determine if poll is multiple choice."""
+        view=self.multiplechoicebuttons(ctx)
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
@@ -419,7 +505,7 @@ class Poll:
                 "\n"
                 "If the maximum choices are reached for a voter, they have to unvote an option before being able to "
                 "vote for a different one.")
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -440,6 +526,7 @@ class Poll:
 
     async def set_options_reaction(self, ctx, force=None):
         """Set the answers / options of the Poll."""
+        view=self.optionsreactionbuttons(ctx)
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
@@ -483,7 +570,7 @@ class Poll:
                 "\n"
                 "Example for custom options:\n"
                 "**apple juice, banana ice cream, kiwi slices** ")
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -513,6 +600,7 @@ class Poll:
 
     async def set_survey_flags(self, ctx, force=None):
         """Decide which Options will ask for user input."""
+        view=self.surveyflagsnbuttons(ctx)
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
@@ -549,7 +637,7 @@ class Poll:
         text += ("\n"
                  "If the user votes for one of these options, the bot will PM them and ask them to provide a text "
                  "input. You can use this to do surveys or to gather feedback for example.\n")
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -572,6 +660,7 @@ class Poll:
 
     async def set_hide_vote_count(self, ctx, force=None):
         """Determine the live vote count is hidden or shown."""
+        view=self.hidevotecountbuttons(ctx)
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
@@ -600,7 +689,7 @@ class Poll:
                 "\n"
                 "You will still be able to see the vote count once the poll is closed. This settings will just hide "
                 "the vote count while the poll is active.")
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -617,6 +706,7 @@ class Poll:
 
     async def set_roles(self, ctx, force=None):
         """Set role restrictions for the Poll."""
+        view=self.rolesbuttons(ctx)
         async def get_valid(in_reply, roles):
             n_roles = roles.__len__()
             if not in_reply:
@@ -626,7 +716,7 @@ class Poll:
             if split.__len__() == 1 and split[0] in ['0', 'all', 'everyone']:
                 return ['@everyone']
 
-            if n_roles <= 20 and not force:
+            if n_roles <= 3 and not force:
                 if not all([r.isdigit() for r in split]):
                     raise ExpectedInteger
                 elif any([int(r) > n_roles for r in split]):
@@ -652,7 +742,7 @@ class Poll:
         except InputError:
             pass
 
-        if n_roles <= 20:
+        if n_roles <= 3:
             text = ("**Choose which roles are allowed to vote.**\n"
                     "Type `0`, `all` or `everyone` to have no restrictions.\n"
                     "If you want multiple roles to be able to vote, separate the numbers with a comma.\n")
@@ -668,7 +758,7 @@ class Poll:
                     "Type `0`, `all` or `everyone` to have no restrictions.\n"
                     "Type out the role names, separated by a comma, to restrict voting to specific roles:\n"
                     "`moderators, Editors, vips` (hint: role names are case sensitive!)\n")
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -691,6 +781,7 @@ class Poll:
 
     async def set_weights(self, ctx, force=None):
         """Set role weights for the poll."""
+        view=self.weightsbuttons(ctx)
         async def get_valid(in_reply, server_roles):
             if not in_reply:
                 raise InvalidInput
@@ -731,7 +822,7 @@ class Poll:
                 "A weight for the role `moderator` of `2` for example will automatically count the votes of all the moderators twice.\n"
                 "To assign weights type the role, followed by a colon, followed by the weight like this:\n"
                 "`moderator: 2, newbie: 0.5`")
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -762,6 +853,7 @@ class Poll:
 
     async def set_duration(self, ctx, force=None):
         """Set the duration /deadline for the Poll."""
+        view=self.durationbuttons(ctx)
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
@@ -799,7 +891,7 @@ class Poll:
                 "You can specify a timezone if you want.\n"
                 "\n"
                 "Examples: `in 6 hours` or `next week CET` or `aug 15th 5:10` or `15.8.2019 11pm EST`")
-        message = await self.wizard_says(ctx, text)
+        message = await self.wizard_says(ctx, text, view=view)
 
         while True:
             try:
@@ -837,7 +929,23 @@ class Poll:
     async def ask_for_input_dm(self, user, title, text):
         embed = discord.Embed(title=title, description=text, color=SETTINGS.color)
         embed.set_footer(text='You can answer anywhere.')
-        message = await user.send(embed=embed)
+        #message = await user.send(embed=embed)
+        try:
+            message = await user.send(embed=embed)
+        except discord.Forbidden:
+            config_result = await self.bot.db.config.find_one({'_id': str(self.channel.guild.id)})
+            if config_result and not config_result.get('error_mess') or config_result and config_result.get('error_mess') == 'True':
+                errormessage = traceback.format_exc(limit=0)
+                embederror = discord.Embed(title='Poll Reaction Error!', color=discord.Color.red())
+                channel = self.bot.get_channel(self.channel.id)
+                if errormessage.find("Cannot send messages to this user") >= 0:
+                    embederror.add_field(name=f'Error type:', value='Error: can\'t send you a DM. please allow DM for this bot!\nYour custom answer vote was most likely not counted', inline=False )
+                    embederror.set_footer(text=f'From poll: {self.short} \nThis message will self-destruct in 1 min.')
+                    await channel.send(f"<@{user.id}> Error!", embed=embederror, delete_after=60)
+                else:
+                    print('error = unknown', traceback.format_exc())
+            else:
+                pass
 
         def check(m):
             return m.author == user
@@ -969,6 +1077,7 @@ class Poll:
                 winning_votes = votes
             elif votes == winning_votes:
                 winning_options.append(o)
+        self.name = regex.sub("\n", " >> ", self.name)
         deadline_str = await self.get_deadline(string=True)
         export = (f'--------------------------------------------\n'
                   f'RT POLLMASTER DISCORD EXPORT\n'
@@ -1002,7 +1111,8 @@ class Poll:
 
             for user_id in self.unique_participants:
                 # member = self.server.get_member(int(user_id))
-                member = await self.bot.fetch_user(int(user_id))
+                # member = await self.bot.fetch_user(int(user_id))
+                member = await self.bot.member_cache.get(self.server, int(user_id))
 
                 if not member:
                     name = "<Deleted User>"
@@ -1045,7 +1155,8 @@ class Poll:
 
             for user_id in self.unique_participants:
                 # member = self.server.get_member(int(user_id))
-                member = await self.bot.fetch_user(int(user_id))
+                # member = await self.bot.fetch_user(int(user_id))
+                member = await self.bot.member_cache.get(self.server, int(user_id))
                 if not member:
                     name = "<Deleted User>"
                 else:
@@ -1099,7 +1210,8 @@ class Poll:
 
     async def export(self):
         """Create export file and return path"""
-        if not self.open:
+        checkexist = os.path.exists('export')
+        if not self.open and checkexist == True:
             clean_label = str(self.short).replace("/", "").replace(".", "")
             fn = 'export/' + str(self.server.id) + '_' + clean_label + '.txt'
             with codecs.open(fn, 'w', 'utf-8') as outfile:
@@ -1125,8 +1237,9 @@ class Poll:
         self.server = self.bot.get_guild(int(d['server_id']))
         self.channel = self.bot.get_channel(int(d['channel_id']))
         if self.server != None:
-            self.author = await self.bot.fetch_user(int(d['author']))
+            # self.author = await self.bot.fetch_user(int(d['author']))
             # self.author = self.server.get_member(int(d['author']))
+            self.author = await self.bot.member_cache.get(self.server, int(d['author']))
         else:
             self.author = None
         self.name = d['name']
@@ -1487,7 +1600,23 @@ class Poll:
             if vote:
                 await vote.delete_from_db()
                 await self.refresh(message)
-                await self.bot.loop.create_task(user.send(f'Your vote for **{self.options_reaction[choice]}** has been REMOVED.'))
+                #await self.bot.loop.create_task(user.send(f'Your vote for **{self.options_reaction[choice]}** has been REMOVED.'))
+                try:
+                    await user.send(f'Your vote for **{self.options_reaction[choice]}** has been REMOVED.')
+                except discord.Forbidden:
+                    config_result = await self.bot.db.config.find_one({'_id': str(self.channel.guild.id)})
+                    if config_result and not config_result.get('error_mess') or config_result and config_result.get('error_mess') == 'True':
+                        errormessage = traceback.format_exc(limit=0)
+                        embederror = discord.Embed(title='Poll Reaction Error!', color=discord.Color.red())
+                        channel = self.bot.get_channel(message.channel.id)
+                        if errormessage.find("Cannot send messages to this user") >= 0:
+                            embederror.add_field(name=f'Error type:', value='Error: can\'t send you a DM. please allow DM for this bot!\nYour vote was most likely still Removed', inline=False )
+                            embederror.set_footer(text=f'from poll: {self.short} \nThis message will self-destruct in 1 min.')
+                            await channel.send(f"<@{user.id}> Error!", embed=embederror, delete_after=60)
+                        else:
+                            print('error = unknown', traceback.format_exc())
+                    else:
+                        pass
                 return
 
         # check if already voted for the same choice
@@ -1509,8 +1638,24 @@ class Poll:
                         say_text += f'{AZ_EMOJIS[v.choice]} '
                     say_text += f'{self.options_reaction[v.choice]}\n'
             embed = discord.Embed(title='', description=say_text, colour=SETTINGS.color)
-            embed.set_author(name='Pollmaster', icon_url=SETTINGS.author_icon)
-            self.bot.loop.create_task(user.send(embed=embed))
+            embed.set_author(name='RT Pollmaster', icon_url=SETTINGS.author_icon)
+            #self.bot.loop.create_task(user.send(embed=embed))
+            try:
+                await user.send(embed=embed)
+            except discord.Forbidden:
+                config_result = await self.bot.db.config.find_one({'_id': str(self.channel.guild.id)})
+                if config_result and not config_result.get('error_mess') or config_result and config_result.get('error_mess') == 'True':
+                    errormessage = traceback.format_exc(limit=0)
+                    embederror = discord.Embed(title='Poll Reaction Error!', color=discord.Color.red())
+                    channel = self.bot.get_channel(message.channel.id)
+                    if errormessage.find("Cannot send messages to this user") >= 0:
+                        embederror.add_field(name=f'Error type:', value='Error: can\'t send you a DM. please allow DM for this bot!\nYour vote was most likely not counted', inline=False )
+                        embederror.set_footer(text=f'From poll: {self.short} \nThis message will self-destruct in 1 min.')
+                        await channel.send(f"<@{user.id}> Error!", embed=embederror, delete_after=60)
+                    else:
+                        print('error = unknown', traceback.format_exc())
+                else:
+                    pass
             return
 
         answer = ''
@@ -1526,7 +1671,23 @@ class Poll:
                 answer = "No Answer"
 
         if self.anonymous or self.hide_count:
-            self.bot.loop.create_task(user.send(f'Your vote for **{self.options_reaction[choice]}** has been counted.'))
+            #self.bot.loop.create_task(user.send(f'Your vote for **{self.options_reaction[choice]}** has been counted.'))
+            try:
+                await user.send(f'Your vote for **{self.options_reaction[choice]}** has been counted.')
+            except discord.Forbidden:
+                config_result = await self.bot.db.config.find_one({'_id': str(self.channel.guild.id)})
+                if config_result and not config_result.get('error_mess') or config_result and config_result.get('error_mess') == 'True':
+                    errormessage = traceback.format_exc(limit=0)
+                    embederror = discord.Embed(title='Poll Reaction Error!', color=discord.Color.red())
+                    channel = self.bot.get_channel(message.channel.id)
+                    if errormessage.find("Cannot send messages to this user") >= 0:
+                        embederror.add_field(name=f'Error type:', value='Error: can\'t send you a DM. please allow DM for this bot!\nYour vote was most likely still counted', inline=False )
+                        embederror.set_footer(text=f'From poll: {self.short} \nThis message will self-destruct in 1 min.')
+                        await channel.send(f"<@{user.id}> Error!", embed=embederror, delete_after=60)
+                    else:
+                        print('error = unknown', traceback.format_exc())
+                else:
+                    pass
 
         # commit
         vote = Vote(self.bot, self.id, user.id, choice, weight, answer)
@@ -1584,3 +1745,391 @@ class Poll:
             await message.edit(embed=await self.generate_embed())
         else:
             self.bot.loop.create_task(message.edit(embed=await self.generate_embed()))
+
+    class namebuttons(View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        # async def disable_all_items(self):
+        #     for item in self.children:
+        #         item.disabled = True
+        #     await self.ctx.message.edit(view=self)
+
+        #async def on_timeout(self) -> None:
+        #    await self.ctx.send("timeout error")
+        #    await self.disable_all_items()
+
+        # async def on_error(self, interaction, error, item):
+        #     await interaction.response.send_message(str(error))
+        #     await super().on_error(interaction, error, item)
+
+        # async def interaction_check(self, interaction) -> bool:
+        #     if interaction.user != self.ctx.author:
+        #         await interaction.response.send_message("not allowed", ephemeral=True)
+        #         return False
+        #     else:
+        #         return True
+            
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='What is the question of your poll?', style=discord.TextStyle.short, min_length=3)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())
+        # @discord.ui.button(label='1', row=1, style=discord.ButtonStyle.green, custom_id='1')
+        # async def stop_callback(self, interaction: discord.Interaction, button: Button):
+        #     #await Poll.wizard_says(ctx, 'Poll Wizard stopped.', footer=False)
+        #     await interaction.response.edit_message(view=self)
+        #     #self.custom_id = "stop123"
+        #     #self.disabled = True
+        #     self.stop()
+
+        # @discord.ui.button(label='2', row=1, style=discord.ButtonStyle.green, custom_id='2')
+        # async def stop_callback(self, interaction: discord.Interaction, button: Button):
+        #     #await Poll.wizard_says(ctx, 'Poll Wizard stopped.', footer=False)
+        #     await interaction.response.edit_message(view=self)
+        #     #self.custom_id = "stop123"
+        #     #self.disabled = True
+        #     self.stop()
+
+    class shortbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='unique one word identifier, for your poll.', style=discord.TextStyle.short)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())
+
+    class preparationbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(emoji="0️⃣", row=1, style=discord.ButtonStyle.blurple, custom_id='0')
+        async def zero_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='When you want to activate the poll?', style=discord.TextStyle.short)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())
+    
+    class anonymousbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        # def sanitize_string(string):
+        #     print('sanitize_string ran!v2')
+        #     """Sanitize user input for wizard"""
+        #     # sanitize input
+        #     if string is None:
+        #         raise InvalidInput
+        #     string = regex.sub("\p{C}+", "", string)
+        #     if set(string).issubset(set(' ')):
+        #         raise InvalidInput
+        #     return string
+
+
+        # async def add_vaild(self, message, string):
+        #     print('add_vaild ran!')
+        #     text = ''
+        #     if message.embeds.__len__() > 0:
+        #         text = message.embeds[0].description + '\n\n✅ ' + string
+        #     return await Poll.wizard_says_edit(message, text)
+        
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(emoji="0️⃣", row=1, style=discord.ButtonStyle.blurple, custom_id='0')
+        async def zero_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(emoji="1️⃣", row=1, style=discord.ButtonStyle.blurple, custom_id='1')
+        async def one_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+    class multiplechoicebuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="0", row=1, style=discord.ButtonStyle.blurple, custom_id='0')
+        async def zero_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="1", row=1, style=discord.ButtonStyle.blurple, custom_id='1')
+        async def one_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(label="2", row=1, style=discord.ButtonStyle.blurple, custom_id='2')
+        async def two_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='How many options should voter able to choose?', style=discord.TextStyle.short)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())
+
+    class optionsreactionbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="1", row=1, style=discord.ButtonStyle.blurple, custom_id='1')
+        async def one_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="2", row=1, style=discord.ButtonStyle.blurple, custom_id='2')
+        async def two_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(label="3", row=1, style=discord.ButtonStyle.blurple, custom_id='3')
+        async def three_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(label="4", row=1, style=discord.ButtonStyle.blurple, custom_id='4')
+        async def four_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='Choose the options/answers for your poll.', style=discord.TextStyle.short)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())
+            
+    class surveyflagsnbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="0", row=1, style=discord.ButtonStyle.green, custom_id='0')
+        async def zero_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="1", row=1, style=discord.ButtonStyle.green, custom_id='1')
+        async def one_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(label="2", row=1, style=discord.ButtonStyle.green, custom_id='2')
+        async def two_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(label="3", row=1, style=discord.ButtonStyle.green, custom_id='3')
+        async def three_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='Which options will ask for a custom answer?', style=discord.TextStyle.short)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())
+
+    class hidevotecountbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="0", row=1, style=discord.ButtonStyle.green, custom_id='0')
+        async def zero_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="1", row=1, style=discord.ButtonStyle.green, custom_id='1')
+        async def one_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+        
+    class rolesbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="everyone", row=1, style=discord.ButtonStyle.blurple, custom_id='0')
+        async def zero_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="1", row=1, style=discord.ButtonStyle.blurple, custom_id='1', disabled=True)
+        async def one_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(label="2", row=1, style=discord.ButtonStyle.blurple, custom_id='2', disabled=True)
+        async def two_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(label="3", row=1, style=discord.ButtonStyle.blurple, custom_id='3', disabled=True)
+        async def three_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='Choose which roles are allowed to vote.', style=discord.TextStyle.short)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())
+            
+        @discord.ui.select(cls=RoleSelect, custom_id='roleselect', max_values=25)
+        async def select_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+    
+    class weightsbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="0", row=1, style=discord.ButtonStyle.blurple, custom_id='0')
+        async def zero_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="1", row=1, style=discord.ButtonStyle.blurple, custom_id='1')
+        async def one_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='type your answer(`stop` to stop the Wizard)', style=discord.TextStyle.short)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())
+
+    class durationbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=600)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+        
+        @discord.ui.button(emoji="0️⃣", row=1, style=discord.ButtonStyle.blurple, custom_id='0')
+        async def zero_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(label="in 30 min", row=1, style=discord.ButtonStyle.blurple, custom_id='in 30 min')
+        async def min30_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+            
+        @discord.ui.button(label="in 1 week", row=1, style=discord.ButtonStyle.blurple, custom_id='in 1 week')
+        async def week_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='When should the poll be closed?', style=discord.TextStyle.short)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())

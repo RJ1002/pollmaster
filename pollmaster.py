@@ -2,15 +2,15 @@ import json
 import sys
 import traceback
 import asyncio
-
+import datetime as dt
 import aiohttp
 import discord
 import logging
-
+import pytz
 
 
 from essentials.messagecache import MessageCache
-import discord
+from essentials.membercache import MemberCache
 from discord.ext import commands
 from discord import app_commands
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -39,6 +39,7 @@ bot = commands.AutoShardedBot(**bot_config, intents=intents)
 bot.remove_command('help')
 
 bot.message_cache = MessageCache(bot)
+bot.member_cache = MemberCache()
 bot.refresh_blocked = {}
 bot.refresh_queue = {}
 
@@ -116,7 +117,7 @@ async def on_ready():
     # cache prefixes
     bot.pre = {entry['_id']: entry.get('prefix', 'pm!') async for entry in bot.db.config.find({}, {'_id', 'prefix'})}
 
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="pm!help and /help"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="/help"))
 
     print("Bot running.")
 
@@ -138,7 +139,6 @@ async def on_command_error(ctx, e):
             commands.CheckFailure,
             commands.CommandOnCooldown,
             commands.MissingPermissions,
-            discord.errors.Forbidden,
         )
 
         if isinstance(e, ignored_exceptions):
@@ -156,9 +156,61 @@ async def on_command_error(ctx, e):
             e = discord.Embed(
                 title=f"Error With command: {ctx.command.name}",
                 description=f"```py\n{type(e).__name__}: {str(e)}\n```\n\nContent:{ctx.message.content}"
-                            f"\n\tServer: {ctx.message.guild}\n\tChannel: #{ctx.message.channel}"
-                            f'\n\tAuthor: @{ctx.message.author}',
+                            f"\n\tServer: {ctx.message.guild}\n\tServerid: {ctx.message.guild.id}\n\tChannel: #{ctx.message.channel}"
+                            f'\n\tAuthor: @{ctx.message.author}\n\tAuthorid: {ctx.message.author.id}',
                 timestamp=ctx.message.created_at
+            )
+            await error_msg.send(embed=e)
+
+        # if SETTINGS.mode == 'development':
+        # raise e
+        
+@bot.event
+async def on_error(e, ctx):
+    print('on error ran!')
+    print('on error ctx', ctx)
+    print('on error e!', e)
+    # print('on error ev2!')
+    
+    print('error message3', type(ctx).__name__)
+    print('error message3type', type(ctx))
+    print('error messagev33', str(ctx))
+
+    # if hasattr(ctx.cog, 'qualified_name') and ctx.cog.qualified_name == "Admin":
+    #     # Admin cog handles the errors locally
+    #     return
+
+    if SETTINGS.log_errors:
+        ignored_exceptions = (
+            commands.MissingRequiredArgument,
+            commands.CommandNotFound,
+            commands.DisabledCommand,
+            commands.BadArgument,
+            commands.NoPrivateMessage,
+            commands.CheckFailure,
+            commands.CommandOnCooldown,
+            commands.MissingPermissions,
+        )
+
+        if isinstance(e, ignored_exceptions):
+            # log warnings
+            # logger.warning(f'{type(e).__name__}: {e}\n{"".join(traceback.format_tb(e.__traceback__))}')
+            return
+
+        # log error
+        logger.error(f'{type(ctx).__name__}: {e}\n{"".join(traceback.format_exc())}')
+        #traceback.print_exception(type(ctx), ctx, e_, file=sys.stderr)
+
+        if SETTINGS.msg_errors:
+            # send discord message for unexpected errors
+            error_msg = await bot.fetch_user(bot.owner)
+            getguild_name = await bot.fetch_guild(ctx.guild_id)
+            e = discord.Embed(
+                title=f"Error With: {ctx.event_type}",
+                description=f"```py\n{type(ctx).__name__}: {traceback.format_exc(limit=0)}\n```\n\nContent: {ctx.emoji}"
+                            f"\n\tServer: {getguild_name}\n\tServerid: {ctx.guild_id}\n\tChannel: #{ctx.channel_id}"
+                            f'\n\tAuthor: <@{ctx.user_id}>\n\tAuthorid: {ctx.user_id}',
+                timestamp=None
             )
             await error_msg.send(embed=e)
 
@@ -169,10 +221,34 @@ async def on_command_error(ctx, e):
 @bot.event
 async def on_guild_join(server):
     result = await bot.db.config.find_one({'_id': str(server.id)})
+    serverowner = str(server.owner_id)
+    print('bot join server:', server.id)
+    logger.info(f'bot join server: {server.id}')
     if result is None:
         await bot.db.config.update_one(
             {'_id': str(server.id)},
-            {'$set': {'prefix': 'pm!', 'admin_role': 'polladmin', 'user_role': 'polluser'}},
+            {'$set': {'prefix': 'pm!', 'admin_role': 'polladmin', 'user_role': 'polluser', 'in_guild': 'True', 'ownerid': serverowner, 'timeleave': 'None', 'error_mess': 'True'}},
+            upsert=True
+        )
+        bot.pre[str(server.id)] = 'pm!'
+    elif result:
+        await bot.db.config.update_one(
+            {'_id': str(server.id)},
+            {'$set': {'in_guild': 'True', 'ownerid': serverowner, 'timeleave': 'None'}},
+            upsert=True
+        )
+        bot.pre[str(server.id)] = 'pm!'
+
+@bot.event
+async def on_guild_remove(server):
+    result = await bot.db.config.find_one({'_id': str(server.id)})
+    timeleft = dt.datetime.utcnow().replace(tzinfo=pytz.utc)
+    print('bot was removed from server:', server.id)
+    logger.info(f'bot was removed from server: {server.id}')
+    if result:
+        await bot.db.config.update_one(
+            {'_id': str(server.id)},
+            {'$set': {'in_guild': 'False', 'timeleave': timeleft}},
             upsert=True
         )
         bot.pre[str(server.id)] = 'pm!'

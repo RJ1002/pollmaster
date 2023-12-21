@@ -1,3 +1,4 @@
+import traceback
 import argparse
 import datetime
 import logging
@@ -5,8 +6,10 @@ import random
 import shlex
 import time
 from string import ascii_lowercase
+import regex
 
 import discord
+from discord.ui import Button, View, Modal, TextInput
 import pytz
 from bson import ObjectId
 from discord.ext import tasks, commands
@@ -73,8 +76,20 @@ class PollControls(commands.Cog):
                     if not p.open:
                         if p.duration.replace(tzinfo=pytz.utc) >= utc_now - datetime.timedelta(hours=2):
                             # only send messages for polls that were supposed to expire in the past 2 hours
-                            await p.channel.send('This poll has reached the deadline and is closed!')
-                            await p.post_embed(p.channel)
+                            try:
+                                await p.channel.send('This poll has reached the deadline and is closed!')
+                                await p.post_embed(p.channel)
+                            except:
+                                logger.warning(f"Failed to send message for a closed poll: {p.server.id}")
+                                # send bot owner a DM
+                                warningdm = await self.bot.fetch_user(self.bot.owner)
+                                e = discord.Embed(
+                                    title=f"Error With: Failed to send message for a closed poll",
+                                    description=f"```py\n{type(self).__name__}: {traceback.format_exc(limit=0)}\n```\n\nContent: {p.short}"
+                                                f"\n\tServer: {p.server}\n\tServerid: {p.server.id}\n\tChannel: #{p.channel.id}",
+                                    timestamp=None
+                                )
+                                await warningdm.send(embed=e)
                         else:
                             logger.info(f"Closing old poll: {p.id}")
 
@@ -105,10 +120,25 @@ class PollControls(commands.Cog):
                     if p.active:
                         if p.activation.replace(tzinfo=pytz.utc) >= utc_now - datetime.timedelta(hours=2):
                             # only send messages for polls that were supposed to expire in the past 2 hours
-                            await p.channel.send('This poll has been scheduled and is active now!')
-                            await p.post_embed(p.channel)
+                            try:
+                                await p.channel.send('This poll has been scheduled and is active now!')
+                                await p.post_embed(p.channel)
+                            except:
+                                logger.warning(f"Failed to send message for a active poll: {p.server.id}")
+                                # send bot owner a DM
+                                warningdm = await self.bot.fetch_user(self.bot.owner)
+                                e = discord.Embed(
+                                    title=f"Error With: Failed to send message for a active poll",
+                                    description=f"```py\n{type(self).__name__}: {traceback.format_exc(limit=0)}\n```\n\nContent: {p.short}"
+                                                f"\n\tServer: {p.server}\n\tServerid: {p.server.id}\n\tChannel: #{p.channel.id}",
+                                    timestamp=None
+                                )
+                                await warningdm.send(embed=e)
                         else:
                             logger.info(f"Activating old poll: {p.id}")
+        else:
+            print('unknown error for close_activate_polls')
+            logger.info(f"unknown error for close_activate_polls")
 
     @close_activate_polls.before_loop
     async def before_close_activate_polls(self):
@@ -173,9 +203,9 @@ class PollControls(commands.Cog):
         embed.set_author(name='Error', icon_url=SETTINGS.author_icon)
         if footer_text is not None:
             embed.set_footer(text=footer_text)
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=60)
 
-    async def say_embed(self, ctx, say_text='', title='Pollmaster', footer_text=None):
+    async def say_embed(self, ctx, say_text='', title='RT Pollmaster', footer_text=None):
         embed = discord.Embed(title='', description=say_text, colour=SETTINGS.color)
         embed.set_author(name=title, icon_url=SETTINGS.author_icon)
         if footer_text is not None:
@@ -192,7 +222,7 @@ class PollControls(commands.Cog):
     #     p = await Poll.load_from_db(self.bot, str(server.id), 'test', ctx=ctx)
     #     print(await Vote.load_number_of_voters_for_poll(self.bot, p.id))
 
-    @commands.hybrid_command(name="activate", description="Activate a prepared poll.")
+    @commands.hybrid_command(name="activate", description="Activate a prepared poll.", with_app_command=True)
     @app_commands.describe(
         short='Choose name of poll to activate',
     )
@@ -200,21 +230,25 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`activate` can only be used in a server text channel.", delete_after=60)
+            return
+        
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`activate` can only be used in a server text channel.", delete_after=60)
-            return
+        
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the activate command. \n' \
-                    f'`{pre}activate <poll_label>`'
+                    f'~~`{pre}activate <poll_label>`~~ or `/activate <poll_label>`'
             await self.say_error(ctx, error)
         else:
             p = await Poll.load_from_db(self.bot, server.id, short)
@@ -241,7 +275,7 @@ class PollControls(commands.Cog):
                 await self.say_error(ctx, error)
                 await ctx.invoke(self.show, 'prepared')
 
-    @commands.hybrid_command(name="delete", description="Delete a poll.")
+    @commands.hybrid_command(name="delete", description="Delete a poll.", with_app_command=True)
     @app_commands.describe(
         short='Choose name of poll to delete',
     )
@@ -249,22 +283,25 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`delete` can only be used in a server text channel.", delete_after=60)
+            return
+            
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`delete` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the delete command. \n' \
-                    f'`{pre}delete <poll_label>`'
+                    f'~~`{pre}delete <poll_label>`~~ or `/delete <poll_label>`'
             await self.say_error(ctx, error)
         else:
             p = await Poll.load_from_db(self.bot, server.id, short)
@@ -291,10 +328,10 @@ class PollControls(commands.Cog):
             else:
                 error = f'Poll with label "{short}" was not found.'
                 pre = await get_server_pre(self.bot, ctx.message.guild)
-                footer = f'Type {pre}show to display all polls'
+                footer = f'Type ~~{pre}show~~ or /show to display all polls'
                 await self.say_error(ctx, error, footer)
 
-    @commands.hybrid_command(name="close", description="Close a poll.")
+    @commands.hybrid_command(name="close", description="Close a poll.", with_app_command=True)
     @app_commands.describe(
         short='Choose name of poll to close',
     )
@@ -302,22 +339,25 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`close` can only be used in a server text channel.", delete_after=60)
+            return
+            
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`close` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the close command. \n' \
-                    f'`{pre}close <poll_label>`'
+                    f'~~`{pre}close <poll_label>`~~ or `/close <poll_label>`'
             await self.say_error(ctx, error)
         else:
             p = await Poll.load_from_db(self.bot, server.id, short)
@@ -341,7 +381,7 @@ class PollControls(commands.Cog):
                 await self.say_error(ctx, error)
                 await ctx.invoke(self.show)
 
-    @commands.hybrid_command(name="copy", description="Copy a poll.")
+    @commands.hybrid_command(name="copy", description="Copy a poll.", with_app_command=True)
     @app_commands.describe(
         short='Choose name of poll to copy',
     )
@@ -349,28 +389,33 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`copy` can only be used in a server text channel.", delete_after=60)
+            return
+            
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`copy` can only be used in a server text channel.", delete_after=60)
-            return
-        
+            
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the copy command. \n' \
-                    f'`{pre}copy <poll_label>`'
+                    f'~~`{pre}copy <poll_label>`~~ or `/copy <poll_label>`'
             await self.say_error(ctx, error)
 
         else:
             p = await Poll.load_from_db(self.bot, server.id, short)
             if p is not None:
-                text = await get_server_pre(self.bot, server) + p.to_command()
+                fix_cmd = p.to_command()
+                replace_cmd = fix_cmd.replace('cmd', 'cmd:')
+                text = await get_server_pre(self.bot, server) + p.to_command() + "\n\n /cmd " + replace_cmd
                 await self.say_embed(ctx, text, title="Paste this to create a copy of the poll")
             else:
                 error = f'Poll with label "{short}" was not found. Listing all open polls.'
@@ -379,7 +424,7 @@ class PollControls(commands.Cog):
                 await self.say_error(ctx, error)
                 await ctx.invoke(self.show)
 
-    @commands.hybrid_command(name="export", description="Export a poll.")
+    @commands.hybrid_command(name="export", description="Export a poll.", with_app_command=True)
     @app_commands.describe(
         short='Choose name of poll to export',
     )
@@ -387,22 +432,25 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`export` can only be used in a server text channel.", delete_after=60)
+            return
+            
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
             return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`export` can only be used in a server text channel.", delete_after=60)
-            return
-        
+            
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         if short is None:
             pre = await get_server_pre(self.bot, ctx.message.guild)
             error = f'Please specify the label of a poll after the export command. \n' \
-                    f'`{pre}export <poll_label>`'
+                    f'~~`{pre}export <poll_label>`~~ or `/export <poll_label>`'
             await self.say_error(ctx, error)
         else:
             p = await Poll.load_from_db(self.bot, server.id, short)
@@ -410,7 +458,7 @@ class PollControls(commands.Cog):
                 if p.open:
                     pre = await get_server_pre(self.bot, ctx.message.guild)
                     error_text = f'You can only export closed polls. \n' \
-                                 f'Please `{pre}close {short}` the poll first or wait for the deadline.'
+                                 f'Please ~~`{pre}close {short}`~~ or `/close {short}` the poll first or wait for the deadline.'
                     await self.say_error(ctx, error_text)
                 else:
                     # sending file
@@ -435,7 +483,7 @@ class PollControls(commands.Cog):
                 await self.say_error(ctx, error)
                 await ctx.invoke(self.show)
 
-    @commands.hybrid_command(name="show", description="Show a list of open polls or show a specific poll.")
+    @commands.hybrid_command(name="show", description="Show a list of open polls or show a specific poll.", with_app_command=True)
     @app_commands.describe(
         short='Parameters: "open" (default), "closed", "prepared" or <label>',
     )
@@ -443,18 +491,21 @@ class PollControls(commands.Cog):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`show` can only be used in a server text channel.", delete_after=60)
+            return
+        
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`show` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         if short in ['open', 'closed', 'prepared']:
             query = None
             if short == 'open':
@@ -471,6 +522,7 @@ class PollControls(commands.Cog):
                 return
 
             def item_fct(i, item):
+                item["name"] = regex.sub("\n", " >> ", item["name"])
                 return f':black_small_square: **{item["short"]}**: {item["name"]}'
 
             title = f' Listing {short} polls'
@@ -479,7 +531,7 @@ class PollControls(commands.Cog):
             # await self.bot.say(embed=await self.embed_list_paginated(polls, item_fct, embed))
             # msg = await self.embed_list_paginated(ctx, polls, item_fct, embed, per_page=8)
             pre = await get_server_pre(self.bot, server)
-            footer_text = f'type {pre}show <label> to display a poll. '
+            footer_text = f'type {pre}show <label> or /show <label> to display a poll. '
             msg = await embed_list_paginated(ctx, self.bot, pre, polls, item_fct, embed, footer_prefix=footer_text,
                                              per_page=10)
         else:
@@ -492,35 +544,38 @@ class PollControls(commands.Cog):
             else:
                 error = f'Poll with label {short} was not found.'
                 pre = await get_server_pre(self.bot, server)
-                footer = f'Type {pre}show to display all polls'
+                footer = f'Type {pre}show or /show to display all polls'
                 await self.say_error(ctx, error, footer)
 
-    @commands.hybrid_command(name="draw")
+    @commands.hybrid_command(name="draw", with_app_command=True)
     async def draw(self, ctx, short=None, opt=None):
         server = await ask_for_server(self.bot, ctx.message, short)
         if not server:
             return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`draw` can only be used in a server text channel.", delete_after=60)
+            return
+            
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`draw` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         pre = await get_server_pre(self.bot, ctx.message.guild)
         if opt is None:
             error = f'No answer specified please use the following syntax: \n' \
-                    f'`{pre}draw <poll_label> <answer_letter>`'
+                    f'~~`{pre}draw <poll_label> <answer_letter>`~~ or `/draw <poll_label> <answer_letter>`'
             await self.say_error(ctx, error)
             return
         if short is None:
             error = f'Please specify the label of a poll after the export command. \n' \
-                    f'`{pre}export <poll_label>`'
+                    f'~~`{pre}export <poll_label>`~~ or `/export <poll_label>`'
             await self.say_error(ctx, error)
             return
 
@@ -542,7 +597,9 @@ class PollControls(commands.Cog):
                 await self.say_error(ctx, error)
                 return
             if p.open:
-                await ctx.invoke(self.close, short=short)
+                error = f'Poll need to be closed!\nuse `/close` to close poll.'
+                await self.say_error(ctx, error)
+                return
             await p.load_full_votes()
             voter_list = []
             for vote in p.full_votes:
@@ -555,7 +612,8 @@ class PollControls(commands.Cog):
             # print(voter_list)
             winner_id = random.choice(voter_list)
             # winner = server.get_member(int(winner_id))
-            winner = await self.bot.fetch_user(int(winner_id))
+            # winner = await self.bot.fetch_user(int(winner_id))
+            winner = await self.bot.member_cache.get(server, int(winner_id))
             if not winner:
                 error = f'Invalid winner drawn (id: {winner_id}).'
                 await self.say_error(ctx, error)
@@ -568,25 +626,28 @@ class PollControls(commands.Cog):
             await self.say_error(ctx, error)
             await ctx.invoke(self.show)
 
-    @commands.hybrid_command(name="cmd", description="The old, command style way paired with the wizard.")
+    @commands.hybrid_command(name="cmd", description="The old, command style way paired with the wizard.", with_app_command=True)
     async def cmd(self, ctx, *, cmd=None):
         # await self.say_embed(ctx, say_text='This command is temporarily disabled.')
 
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`cmd` can only be used in a server text channel.", delete_after=60)
+            return
+            
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`cmd` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         pre = await get_server_pre(self.bot, server)
         try:
             # generate the argparser and handle invalid stuff
@@ -671,27 +732,65 @@ class PollControls(commands.Cog):
             logger.error("ERROR IN pm!cmd")
             logger.exception(error)
 
-    @commands.hybrid_command(name="quick", description="Create a quick poll with just a question and some options.")
+    @commands.hybrid_command(name="quick", description="Create a quick poll with just a question and some options. (Wizard)")
     @app_commands.describe(
         name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
-        options_reaction=f'**Choose the options/answers for your poll.** Either chose a preset of options or type your own options, separated by commas. **1** - :white_check_mark: :negative_squared_cross_mark: **2** - :thumbsup: :zipper_mouth: :thumbsdown: **3** - :heart_eyes: :thumbsup: :zipper_mouth:  :thumbsdown: :nauseated_face: **4** - in favour, against, abstaining. Example for custom options: **apple juice, banana ice cream, kiwi slices**',
     )
-    async def quick(self, ctx, *, name: str, options_reaction: str):
+    async def quick(self, ctx, *, name=None):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
+            return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`quick` can only be used in a server text channel.", delete_after=60)
             return
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`quick` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        async def route(poll):
+            await poll.set_name(ctx, force=name)
+            await poll.set_short(ctx, force=str(await generate_word(self.bot, server.id)))
+            await poll.set_anonymous(ctx, force='no')
+            await poll.set_options_reaction(ctx)
+            await poll.set_multiple_choice(ctx, force='1')
+            await poll.set_hide_vote_count(ctx, force='no')
+            await poll.set_roles(ctx, force='all')
+            await poll.set_weights(ctx, force='none')
+            await poll.set_duration(ctx, force='0')
+
+        poll = await self.wizard(ctx, route, server)
+        if poll:
+            await poll.post_embed(poll.channel)
+            
+    @commands.hybrid_command(name="quickslash", description="quick poll with just a question and some options. (slash only no Wizard)", with_app_command=True)
+    @app_commands.describe(
+        name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
+        options_reaction=f'**Choose the options/answers for your poll.** Either chose a preset of options or type your own options, separated by commas. **1** - :white_check_mark: :negative_squared_cross_mark: **2** - :thumbsup: :zipper_mouth: :thumbsdown: **3** - :heart_eyes: :thumbsup: :zipper_mouth:  :thumbsdown: :nauseated_face: **4** - in favour, against, abstaining. Example for custom options: **apple juice, banana ice cream, kiwi slices**',
+    )
+    async def quickslash(self, ctx, *, name: str, options_reaction: str):
+        server = await ask_for_server(self.bot, ctx.message)
+        if not server:
+            return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`quickslash` can only be used in a server text channel.", delete_after=60)
+            return
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
+        
         async def route(poll):
             await poll.set_name(ctx, force=name)
             await poll.set_short(ctx, force=str(await generate_word(self.bot, server.id)))
@@ -707,7 +806,45 @@ class PollControls(commands.Cog):
         if poll:
             await poll.post_embed(poll.channel)
 
-    @commands.hybrid_command(name="prepare", description="Prepare a poll to use later.")
+    @commands.hybrid_command(name="prepare", description="Prepare a poll to use later. (Wizard)")
+    @app_commands.describe(
+        name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
+    )
+    async def prepare(self, ctx, *, name=None):
+        server = await ask_for_server(self.bot, ctx.message)
+        if not server:
+            return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`prepare` can only be used in a server text channel.", delete_after=60)
+            return
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
+        async def route(poll):
+            await poll.set_name(ctx, force=name)
+            await poll.set_short(ctx)
+            await poll.set_preparation(ctx)
+            await poll.set_anonymous(ctx)
+            await poll.set_options_reaction(ctx)
+            await poll.set_survey_flags(ctx)
+            await poll.set_multiple_choice(ctx)
+            await poll.set_hide_vote_count(ctx)
+            await poll.set_roles(ctx)
+            await poll.set_weights(ctx)
+            await poll.set_duration(ctx)
+
+        poll = await self.wizard(ctx, route, server)
+        if poll:
+            await poll.post_embed(ctx.message.author)
+            
+    @commands.hybrid_command(name="prepareslash", description="Prepare a poll to use later. (slash only no Wizard)")
     @app_commands.describe(
         name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
         short='**Now type a unique one word identifier, a label, for your poll.** This label will be used to refer to the poll. Keep it short and significant.',
@@ -725,22 +862,25 @@ class PollControls(commands.Cog):
         anonymous=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)],
         hide_vote_count=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)],
     )
-    async def prepare(self, ctx, *, name: str, short: str, preparation: str, anonymous: discord.app_commands.Choice[int], options_reaction: str, survey_flags: str, multiple_choice: str, hide_vote_count: discord.app_commands.Choice[int], roles: str, weights: str, duration: str):
+    async def prepareslash(self, ctx, *, name: str, short: str, preparation: str, anonymous: discord.app_commands.Choice[int], options_reaction: str, survey_flags: str, multiple_choice: str, hide_vote_count: discord.app_commands.Choice[int], roles: str, weights: str, duration: str):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`prepareslash` can only be used in a server text channel.", delete_after=60)
+            return
+        
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`prepare` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         async def route(poll):
             await poll.set_name(ctx, force=name)
             await poll.set_short(ctx, force=short)
@@ -758,7 +898,43 @@ class PollControls(commands.Cog):
         if poll:
             await poll.post_embed(ctx.message.author)
 
-    @commands.hybrid_command(name="advanced", description="Poll with more options.")
+    @commands.hybrid_command(name="advanced", description="Poll with more options. (Wizard)")
+    @app_commands.describe(
+        name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
+    )
+    async def advanced(self, ctx, *, name=None):
+        server = await ask_for_server(self.bot, ctx.message)
+        if not server:
+            return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`advanced` can only be used in a server text channel.", delete_after=60)
+            return
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
+        async def route(poll):
+            await poll.set_name(ctx, force=name)
+            await poll.set_short(ctx)
+            await poll.set_anonymous(ctx)
+            await poll.set_options_reaction(ctx)
+            await poll.set_survey_flags(ctx)
+            await poll.set_multiple_choice(ctx)
+            await poll.set_hide_vote_count(ctx)
+            await poll.set_roles(ctx)
+            await poll.set_weights(ctx)
+            await poll.set_duration(ctx)
+        poll = await self.wizard(ctx, route, server)
+        if poll:
+            await poll.post_embed(poll.channel)
+            
+    @commands.hybrid_command(name="advancedslash", description="Poll with more options. (slash only no Wizard)", with_app_command=True)
     @app_commands.describe(
         name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
         short='**Now type a unique one word identifier, a label, for your poll.** This label will be used to refer to the poll. Keep it short and significant.',
@@ -775,22 +951,24 @@ class PollControls(commands.Cog):
         anonymous=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)],
         hide_vote_count=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)],
     )
-    async def advanced(self, ctx, *, name: str, short: str, anonymous: discord.app_commands.Choice[int], options_reaction: str, survey_flags: str, multiple_choice: str, hide_vote_count: discord.app_commands.Choice[int], roles: str, weights: str, duration: str):
+    async def advancedslash(self, ctx, *, name: str, short: str, anonymous: discord.app_commands.Choice[int], options_reaction: str, survey_flags: str, multiple_choice: str, hide_vote_count: discord.app_commands.Choice[int], roles: str, weights: str, duration: str):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
+            return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`advancedslash` can only be used in a server text channel.", delete_after=60)
             return
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`advanced` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         async def route(poll):
             await poll.set_name(ctx, force=name)
             await poll.set_short(ctx, force=short)
@@ -802,11 +980,49 @@ class PollControls(commands.Cog):
             await poll.set_roles(ctx, force=roles)
             await poll.set_weights(ctx, force=weights)
             await poll.set_duration(ctx, force=duration)
+
         poll = await self.wizard(ctx, route, server)
         if poll:
             await poll.post_embed(poll.channel)
 
-    @commands.hybrid_command(name="new", description="Start the poll wizard to create a new poll step by step." )
+    @commands.hybrid_command(name="new", description="Start the poll wizard to create a new poll step by step. (Wizard)" )
+    @app_commands.describe(
+        name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
+    )
+    async def new(self, ctx, *, name=None):
+        server = await ask_for_server(self.bot, ctx.message)
+        if not server:
+            return
+        
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`new` can only be used in a server text channel.", delete_after=60)
+            return
+        permissions = ctx.message.channel.permissions_for(server.me)
+        if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
+            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            return
+        
+        guild = ctx.guild
+        if not guild:
+            await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            return
+        async def route(poll):
+            await poll.set_name(ctx, force=name)
+            await poll.set_short(ctx)
+            await poll.set_anonymous(ctx)
+            await poll.set_options_reaction(ctx)
+            await poll.set_survey_flags(ctx, force='0')
+            await poll.set_multiple_choice(ctx)
+            await poll.set_hide_vote_count(ctx, force='no')
+            await poll.set_roles(ctx, force='all')
+            await poll.set_weights(ctx, force='none')
+            await poll.set_duration(ctx)
+
+        poll = await self.wizard(ctx, route, server)
+        if poll:
+            await poll.post_embed(poll.channel)
+            
+    @commands.hybrid_command(name="newslash", description="to create a new poll. (slash only no wizard) ", with_app_command=True)
     @app_commands.describe(
         name='**What is the question of your poll?** Try to be descriptive without writing more than one sentence.',
         short='**Now type a unique one word identifier, a label, for your poll.** This label will be used to refer to the poll. Keep it short and significant.',
@@ -816,24 +1032,26 @@ class PollControls(commands.Cog):
         duration='**When should the poll be closed?** If you want the poll to last indefinitely (until you close it), type `0`. Otherwise tell me when the poll should close in relative or absolute terms. You can specify a timezone if you want. Examples: `in 6 hours` or `next week CET` or `aug 15th 5:10` or `15.8.2019 11pm EST`',
     )
     @app_commands.choices(
-        anonymous=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)]
+        anonymous=[discord.app_commands.Choice(name='0', value=1), discord.app_commands.Choice(name='1', value=2), discord.app_commands.Choice(name='yes', value=3), discord.app_commands.Choice(name='no', value=4)],
     )
-    async def new(self, ctx, *, name: str, short: str, anonymous: discord.app_commands.Choice[int], options_reaction: str, multiple_choice: str, duration: str):
+    async def newslash(self, ctx, *, name: str, short: str, anonymous: discord.app_commands.Choice[int], options_reaction: str, multiple_choice: str, duration: str):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
+            return
+            
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`newslash` can only be used in a server text channel.", delete_after=60)
             return
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`new` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.reply("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
+        
         async def route(poll):
             await poll.set_name(ctx, force=name)
             await poll.set_short(ctx, force=short)
@@ -852,6 +1070,7 @@ class PollControls(commands.Cog):
 
     # The Wizard!
     async def wizard(self, ctx, route, server):
+        print('a wizard has started!')
         channel = await ask_for_channel(ctx, self.bot, server, ctx.message)
         if not channel:
             return
@@ -865,11 +1084,28 @@ class PollControls(commands.Cog):
             result = await self.bot.db.config.find_one({'_id': str(server.id)})
             if result and result.get('admin_role') not in [r.name for r in member.roles] and result.get(
                     'user_role') not in [r.name for r in member.roles]:
-                await ctx.message.author.send('You don\'t have sufficient rights to start new polls on this server. '
-                                              'A server administrator has to assign the user or admin role to you. '
-                                              f'To view and set the permissions, an admin can use `{pre}userrole` and '
-                                              f'`{pre}adminrole`')
-                return
+                print("a wizard was canceled. user had no permission!")
+                try:
+                    await ctx.message.author.send('You don\'t have sufficient rights to start new polls on this server. '
+                                                'A server administrator has to assign the user or admin role to you. '
+                                                f'To view and set the permissions, an admin can use ~~`{pre}userrole` and '
+                                                f'`{pre}adminrole`~~ or `/userrole` and `/adminrole`')
+                    return
+                except discord.Forbidden:
+                    if result and not result.get('error_mess') or result and result.get('error_mess') == 'True':
+                        errormessage = traceback.format_exc(limit=0)
+                        embederror = discord.Embed(title='Poll Command Error', color=discord.Color.red())
+                        if errormessage.find("Cannot send messages to this user") >= 0:
+                            embederror.add_field(name=f'Error type:', value='Error: can\'t send you a DM. please allow DM for this bot!', inline=False )
+                            embederror.set_footer(text=f'From poll: None \nThis message will self-destruct in 1 min.')
+                            await channel.send(f"<@{ctx.message.author.id}> Error!", embed=embederror, delete_after=60)
+                            return
+                        else:
+                            print('error = unknown', traceback.format_exc())
+                            return
+                    else:
+                        return
+                        
 
         # Create object
         poll = Poll(self.bot, ctx, server, channel)
@@ -882,11 +1118,13 @@ class PollControls(commands.Cog):
             poll.finalize()
             await poll.clean_up(ctx.channel)
         except StopWizard:
+            print("a wizard was canceled!")
             await poll.clean_up(ctx.channel)
             return
 
         # Finalize
         await poll.save_to_db()
+        print('a wizard has finished!', server.id)
         return poll
 
     @commands.Cog.listener()
@@ -907,11 +1145,11 @@ class PollControls(commands.Cog):
         message_id = data.message_id
         channel_id = data.channel_id
         channel = self.bot.get_channel(channel_id)
-
         if isinstance(channel, discord.TextChannel):
             server = channel.guild
             # user = server.get_member(user_id)
-            user = await self.bot.fetch_user(user_id)
+            # user = await self.bot.fetch_user(user_id)
+            user = await self.bot.member_cache.get(server, user_id)
             message = self.bot.message_cache.get(message_id)
             if message is None:
                 message = await channel.fetch_message(message_id)
@@ -1025,10 +1263,21 @@ class PollControls(commands.Cog):
             # sending file
             file_name = await p.export()
             if file_name is not None:
-                self.bot.loop.create_task(user.send('Sending you the requested export of "{}".'.format(p.short),
-                                                    file=discord.File(file_name)
-                                                    )
-                                          )
+                try:
+                    await user.send('Sending you the requested export of "{}".'.format(p.short), file=discord.File(file_name))
+                except discord.Forbidden:
+                    config_result = await self.bot.db.config.find_one({'_id': str(server.id)})
+                    if config_result and not config_result.get('error_mess') or config_result and config_result.get('error_mess') == 'True':
+                        errormessage = traceback.format_exc(limit=0)
+                        embederror = discord.Embed(title='Poll Reaction Error', color=discord.Color.red())
+                        if errormessage.find("Cannot send messages to this user") >= 0:
+                            embederror.add_field(name=f'Error type:', value='Error: can\'t send you a DM. please allow DM for this bot!', inline=False )
+                            embederror.set_footer(text=f'From poll: {p.short} \nThis message will self-destruct in 1 min.')
+                            await channel.send(f"<@{user.id}> Error!", embed=embederror, delete_after=60)
+                        else:
+                            print('error = unknown', traceback.format_exc())
+                    else:
+                        pass
             return
 
         # info
@@ -1043,9 +1292,9 @@ class PollControls(commands.Cog):
 
             # created by
             if (p.author != None):
-                created_by = await self.bot.fetch_user(int(p.author.id))
+                created_by = await self.bot.member_cache.get(server, int(p.author.id))
             else:
-                created_by = "<Deleted User>"
+                created_by = "<Unknown User>"
             # created_by = server.get_member(int(p.author.id))
             embed.add_field(name=f'Created by:', value=f'{created_by}',
                             inline=False)
@@ -1057,14 +1306,22 @@ class PollControls(commands.Cog):
 
             # edit rights
             edit_rights = False
-            if str(member.id) == str(p.author.id):
-                edit_rights = True
-            elif member.guild_permissions.manage_guild:
-                edit_rights = True
-            else:
-                result = await self.bot.db.config.find_one({'_id': str(server.id)})
-                if result and result.get('admin_role') in [r.name for r in member.roles]:
+            if p.author == None:
+                if member.guild_permissions.manage_guild:
                     edit_rights = True
+                else:
+                    result = await self.bot.db.config.find_one({'_id': str(server.id)})
+                    if result and result.get('admin_role') in [r.name for r in member.roles]:
+                        edit_rights = True
+            else:
+                if str(member.id) == str(p.author.id):
+                    edit_rights = True
+                elif member.guild_permissions.manage_guild:
+                    edit_rights = True
+                else:
+                    result = await self.bot.db.config.find_one({'_id': str(server.id)})
+                    if result and result.get('admin_role') in [r.name for r in member.roles]:
+                        edit_rights = True
             embed.add_field(name='Can you manage the poll?', value=f'{"✅" if edit_rights else "❎"}', inline=False)
 
             # choices
@@ -1098,7 +1355,22 @@ class PollControls(commands.Cog):
                 time_left = str(deadline - datetime.datetime.utcnow().replace(tzinfo=pytz.utc)).split('.', 2)[0]
 
             embed.add_field(name='Time left in the poll:', value=time_left, inline=False)
-            await user.send(embed=embed)
+            #await user.send(embed=embed)
+            try:
+                await user.send(embed=embed)
+            except discord.Forbidden:
+                config_result = await self.bot.db.config.find_one({'_id': str(server.id)})
+                if config_result and not config_result.get('error_mess') or config_result and config_result.get('error_mess') == 'True':
+                    errormessage = traceback.format_exc(limit=0)
+                    embederror = discord.Embed(title='Poll Reaction Error!', color=discord.Color.red())
+                    if errormessage.find("Cannot send messages to this user") >= 0:
+                        embederror.add_field(name=f'Error type:', value='Error: can\'t send you a DM. please allow DM for this bot!', inline=False )
+                        embederror.set_footer(text=f'From poll: {p.short} \nThis message will self-destruct in 1 min.')
+                        await channel.send(f"<@{user.id}> Error!", embed=embederror, delete_after=60)
+                    else:
+                        print('error = unknown', traceback.format_exc())
+                else:
+                    pass
 
             await p.load_full_votes()
             # await p.load_vote_counts()
@@ -1116,7 +1388,8 @@ class PollControls(commands.Cog):
                     c = 0
                     for vote in p.full_votes:
                         # member = server.get_member(int(vote.user_id))
-                        member: discord.Member = await self.bot.fetch_user(int(vote.user_id))
+                        # member: discord.Member = await self.bot.fetch_user(int(vote.user_id))
+                        member: discord.Member = await self.bot.member_cache.get(server, int(vote.user_id))
                         if not member or vote.choice != i:
                             continue
                         c += 1
@@ -1168,8 +1441,25 @@ class PollControls(commands.Cog):
             # no rights, terminate function
             if not p.has_required_role(member):
                 await message.remove_reaction(emoji, user)
-                await member.send(f'You are not allowed to vote in this poll. Only users with '
-                                  f'at least one of these roles can vote:\n{", ".join(p.roles)}')
+                # await member.send(f'You are not allowed to vote in this poll. Only users with '
+                #                   f'at least one of these roles can vote:\n{", ".join(p.roles)}')
+                # return
+                try:
+                    await member.send(f'You are not allowed to vote in this poll. Only users with '
+                                      f'at least one of these roles can vote:\n{", ".join(p.roles)}')
+                except discord.Forbidden:
+                    config_result = await self.bot.db.config.find_one({'_id': str(server.id)})
+                    if config_result and not config_result.get('error_mess') or config_result and config_result.get('error_mess') == 'True':
+                        errormessage = traceback.format_exc(limit=0)
+                        embederror = discord.Embed(title='Poll Reaction Error!', color=discord.Color.red())
+                        if errormessage.find("Cannot send messages to this user") >= 0:
+                            embederror.add_field(name=f'Error type:', value='Error: can\'t send you a DM. please allow DM for this bot!', inline=False )
+                            embederror.set_footer(text=f'From poll: {p.short} \nThis message will self-destruct in 1 min.')
+                            await channel.send(f"<@{user.id}> Error!", embed=embederror, delete_after=60)
+                        else:
+                            print('error = unknown', traceback.format_exc())
+                    else:
+                        pass
                 return
 
             # check if we need to remove reactions (this will trigger on_reaction_remove)

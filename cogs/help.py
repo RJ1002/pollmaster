@@ -15,7 +15,7 @@ class Help(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.pages = ['🏠', '🆕', '❓', '🔍', '🕹', '🛠', '❔', '💖']
+        self.pages = ['🏠', '🆕', '🔍', '🕹', '🛠', '❔', '💖']
 
     async def embed_list_reaction_handler(self, ctx, page, pre, msg=None):
         embed = self.get_help_embed(page, pre)
@@ -35,6 +35,7 @@ class Help(commands.Cog):
             reaction, user = await self.bot.wait_for('reaction_add', timeout=300, check=check)
         except asyncio.TimeoutError:
             try:
+                print('help menu deleted!')
                 await msg.delete()
                 await ctx.message.delete()
             except discord.errors.NotFound:
@@ -53,49 +54,22 @@ class Help(commands.Cog):
         embed.set_author(name=title, icon_url=SETTINGS.author_icon)
         embed.set_footer(text='Use reactions to navigate the help. This message will self-destruct in 5 minutes.')
 
-        #survey_flags message
-        text = ("**Which options should ask the user for a custom answer?**\n"
-                                        "Type `0` to skip survey options.\n"
-                                        "If you want multiple survey options, separate the numbers with a comma.\n"
-                                        "\n"
-                                        "`0 - None (classic poll)`\n"
-                                        )
-        #for i, option in enumerate(self.options_reaction):
-        #    text += f'`{i + 1} - {option}`\n'
-        text += ("\n"
-                 "If the user votes for one of these options, the bot will PM them and ask them to provide a text "
-                 "input. You can use this to do surveys or to gather feedback for example.\n")
-        
-        text_roles = ("**Choose which roles are allowed to vote.**\n"
-                    "Type `0`, `all` or `everyone` to have no restrictions.\n"
-                    "If you want multiple roles to be able to vote, separate the numbers with a comma.\n")
-        text_roles += f'\n`{0} - no restrictions`'
 
-        #for i, role in enumerate([r.name for r in self.server.roles]):
-        #        text += f'\n`{i+1} - {role}`'
-        text_roles += ("\n"
-                     "\n"
-                     " Example: `2, 3` \n")
-        
-        text_roles = ("**Choose which roles are allowed to vote.**\n"
-                    "Type `0`, `all` or `everyone` to have no restrictions.\n"
-                    "Type out the role names, separated by a comma, to restrict voting to specific roles:\n"
-                    "`moderators, Editors, vips` (hint: role names are case sensitive!)\n")
 
         if page == '🏠':
+            embed.add_field(name='📣 Important Info!:',
+                            value=f'⚠️**Issue!:** make sure you don''t have more then one wizard running!! stop/cancel the wizard before starting another one or it could cause issues in creating a poll.',
+                            inline=False)
             # POLL CREATION SHORT
             embed.add_field(name='🆕 Making New Polls',
                             value=f'`{pre}quick` | `{pre}new` | `{pre}advanced` | `{pre}prepare` | `{pre}cmd <args>`\n'
-                                  f'`/quick` | `/new` | `/advanced` | `/prepare` | `/cmd <args>`',
+                                  f'`/quick` | `/new` | `/advanced` | `/prepare` | `/cmd <args>`\n'
+                                  f'`/quickslash` | `/newslash` | `/advancedslash` | `/prepareslash`',
                             inline=False)
             # embed.add_field(name='Commands', value=f'`{pre}quick` | `{pre}new` | `{pre}prepared`', inline=False)
             # embed.add_field(name='Arguments', value=f'Arguments: `<poll question>` (optional)', inline=False)
             # embed.add_field(name='Examples', value=f'Examples: `{pre}new` | `{pre}quick What is the greenest color?`',
             #                 inline=False)
-            # OPTION  what each option does
-            embed.add_field(name='❓ Options',
-                            value=f'The list of what each option does',
-                            inline=False)
 
             ## POLL CONTROLS
             embed.add_field(name='🔍 Show Polls',
@@ -110,7 +84,7 @@ class Help(commands.Cog):
             # POLL CONTROLS
             embed.add_field(name='🕹 Poll Controls',
                             value=f'`{pre}copy` | `{pre}close` | `{pre}export` | `{pre}delete` | `{pre}activate`\n '
-                                  f'`/copy` | `/close` | `/export` | `/delete` | `/activate` ',
+                                  f'`/copy` | `/close` | `/export` | `/delete` | `/activate`',
                             inline=False)
             # embed.add_field(name='Commands', value=f'`{pre}close` | `{pre}export` | `{pre}delete` | `{pre}activate` ',
             #                 inline=False)
@@ -121,7 +95,7 @@ class Help(commands.Cog):
             # POLL CONTROLS
             embed.add_field(name='🛠 Configuration',
                             value=f'`{pre}userrole [role]` | `{pre}adminrole [role]` | `{pre}prefix <new_prefix>`\n '
-                                  f'`/userrole [role]` | `/adminrole [role]` | `/prefix <new_prefix>` ',
+                                  f'`/userrole [role]` | `/adminrole [role]` | `/prefix <new_prefix>` | `/errormessage`',
                             inline=False
                             )
 
@@ -133,7 +107,7 @@ class Help(commands.Cog):
                             )
             # ABOUT
             embed.add_field(name='💖 About RT Pollmaster',
-                            value='More infos about Pollmaster, the developer, where to go for further help and how you can support us.',
+                            value='More infos about RT Pollmaster, the developer, where to go for further help and how you can support us.',
                             inline=False)
 
         elif page == '🆕':
@@ -141,23 +115,25 @@ class Help(commands.Cog):
                             value='There are four ways to create a new poll. For all the commands you can either just '
                                   'type the command or type the command followed by the question to skip the first step.'
                                   'Your Members need the <admin> or <user> role to use these commands. '
-                                  'More on user rights in 🛠 Configuration.',
+                                  'More on user rights in 🛠 Configuration.\n'
+                                  f'**Notice!:** for commands `/quickslash` and `/newslash` and `/advancedslash` and `/prepareslash` \n They have the same options as there normal commands but each option is in the slash command.\n'
+                                  '⚠️**Issue!:** make sure you don''t have more then one wizard running!! stop/cancel the wizard before starting another one or it could cause issues in creating a poll.\n(your allowed more then one wizard if it from a different account)',
                             inline=False)
-            embed.add_field(name=f'🔹 **Quick Poll:** `{pre}quick` or `/quick`',
+            embed.add_field(name=f'🔹 **Quick Poll:** `{pre}quick` or `/quick` or `/quickslash`',
                             value='If you just need a quick poll, this is the way to go. All you have to specify is the '
                                   'question and your answers; the rest will be set to default values.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Basic Poll:** `{pre}new` or `/new`',
+            embed.add_field(name=f'🔹 **Basic Poll:** `{pre}new` or `/new` or `/newslash`',
                             value='This command gives control over the most common settings. A step by step wizard will guide '
                                   'you through the process and you can specify options such as Multiple Choice, '
                                   'Anonymous Voting and Deadline.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Advanced Poll:** `{pre}advanced` or `/advanced`',
+            embed.add_field(name=f'🔹 **Advanced Poll:** `{pre}advanced` or `/advanced` or `/advancedslash`',
                             value='This command gives you full control over your poll. A step by step wizard will guide '
                                   'you through the process and you can specify additional options such as Hide Vote Count, '
                                   'Role Restrictions, Role Weights or Custom Write-In Answers (Survey Flags).',
                             inline=False)
-            embed.add_field(name=f'🔹 **Prepare and Schedule:** `{pre}prepare` or `/prepare`',
+            embed.add_field(name=f'🔹 **Prepare and Schedule:** `{pre}prepare` or `/prepare` or `/prepareslash`',
                             value=f'Similar to `{pre}advanced`, this gives you all the options. But additionally, the poll will '
                                   'be set to \'inactive\'. You can specify if the poll should activate at a certain time '
                                   f'and/or if you would like to manually `{pre}activate` it. '
@@ -171,100 +147,6 @@ class Help(commands.Cog):
                                   f'Example: `{pre}cmd -q "Which colors?" -l colors -o "green, blue, red" -h -a`',
                             inline=False)
 
-                    
-        elif page == '❓':
-            embed.add_field(name='❓ Options',
-                            value='This will be the list of options that each poll will be asking\n'
-                                  'Your Members need the <admin> or <user> role to use these.\n'
-                                  'More on user rights in 🛠 Configuration.',
-                            inline=False)
-            embed.add_field(name=f'🔹 **name:** `Set the Question / Name of the Poll.`',
-                            value='**What is the question of your poll?**\n'
-                                    'Try to be descriptive without writing more than one sentence.\n'
-                                    'Error message you might get: **Keep the poll question between 3 and 400 valid characters**',
-                            inline=False)
-            embed.add_field(name=f'🔹 **short:** `Set the label of the Poll.`',
-                            value='**Now type a unique one word identifier, a label, for your poll.**\n'
-                                    'This label will be used to refer to the poll. Keep it short and significant.\n'
-                                  'Error message you might get: **Only one word between 2 and 25 valid characters!** \n'
-                                  '**Can\'t use reserved words (open, closed, prepared) as label!**\n **The label `{reply}` is not unique on this server. Choose a different one!**',
-                            inline=False)
-            embed.add_field(name=f'🔹 **preparation:** `Set the preparation conditions for the Poll.`',
-                            value='This poll will be created inactive. You can either schedule activation at a certain date or activate \n'
-                                  'it manually. **Type `0` to activate it manually or tell me when you want to activate it** by \n'
-                                  'typing an absolute or relative date. You can specify a timezone if you want.\n'
-                                  'Examples: `in 2 days`, `next week CET`, `may 3rd 2019`, `9.11.2019 9pm EST`\n'
-                                  'Error message you might get: **Specify the activation time in a format i can understand.** \n **Type Error.**\n **{e.date.strftime("%d-%b-%Y %H:%M")} is in the past.**',
-                            inline=False)
-            embed.add_field(name=f'🔹 **anonymous:** `Determine if poll is anonymous.`',
-                            value=f'you need to decide: **Do you want your poll to be anonymous?**\n'
-                                  '\n'
-                                  f'`0 - No`\n'
-                                  '`1  - Yes`\n'
-                                  '\n'
-                                  'An anonymous poll has the following effects:\n'
-                                  '🔹 You will never see who voted for which option\n'
-                                  '🔹 Once the poll is closed, you will see who participated (but not their choice)\n'
-                                  'Error message you might get: **You can only answer with `yes` | `1` or `no` | `0`!**',
-                            inline=False)
-            embed.add_field(name=f'🔹 **options_reaction:** `Set the answers / options of the Poll.`',
-                            value=f'**Choose the options/answers for your poll.**\n'
-                                  f'Either chose a preset of options or type your own options, separated by commas.\n'
-                                  f'\n'
-                                  f'**1** - :white_check_mark: :negative_squared_cross_mark:\n'
-                                  f'**2** - :thumbsup: :zipper_mouth: :thumbsdown:\n'
-                                  f'**3** - :heart_eyes: :thumbsup: :zipper_mouth:  :thumbsdown: :nauseated_face:\n'
-                                  f'**4** - in favour, against, abstaining\n'
-                                  f'\n'
-                                  f'Example for custom options:\n'
-                                  f'**apple juice, banana ice cream, kiwi slices** \n'
-                                  f'Error message you might get: **Invalid entry. Type `1`, `2`, `3` or `4` or a comma separated list of up to 18 options.**\n **You need more than 1 and less than 19 options! Type them in a comma separated list.**',
-                            inline=False)
-            embed.add_field(name=f'🔹 **survey_flags:** `Decide which Options will ask for user input.`',
-                            value=text,
-                            inline=False)
-            
-            embed.add_field(name=f'🔹 **multiple_choice:** `Determine if poll is multiple choice.`',
-                            value=f'**How many options should the voters be able choose?**\n'
-                                  '\n'
-                                  f'`0 - No Limit: Multiple Choice`\n'
-                                  '`1  - Single Choice`\n'
-                                  '`2+  - Specify exactly how many Choices`\n'
-                                  '\n'
-                                  'If the maximum choices are reached for a voter, they have to unvote an option before being able to '
-                                  'vote for a different one.'
-                                  'Error message you might get: **Invalid Input** \n **Enter a positive number** \n **You can\'t have more choices than options.**',
-                            inline=False)
-            embed.add_field(name=f'🔹 **hide_vote_count:** `Determine the live vote count is hidden or shown.`',
-                            value=f'**Do you want to hide the live vote count?**\n'
-                                  '\n'
-                                  f'`0 - No, show it (Default)`\n'
-                                  '`1  - Yes, hide it`\n'
-                                  '\n'
-                                  'You will still be able to see the vote count once the poll is closed. This settings will just hide '
-                                  'the vote count while the poll is active.'
-                                  'Error message you might get: **You can only answer with `yes` | `1` or `no` | `0`!**',
-                            inline=False)
-            embed.add_field(name=f'🔹 **roles:** `Set role restrictions for the Poll.`',
-                            value=text_roles,
-                            inline=False)
-            embed.add_field(name=f'🔹 **weights:** `Set role weights for the poll.`',
-                            value=f'**Weights allow you to give certain roles more or less effective votes.**\n'
-                                  '**Type `0` or `none` if you don\'t need any weights.**\n'
-                                  f'A weight for the role `moderator` of `2` for example will automatically count the votes of all the moderators twice.\n'
-                                  'To assign weights type the role, followed by a colon, followed by the weight like this:\n'
-                                  '`moderator: 2, newbie: 0.5`'
-                                  'Error message you might get: **Can\'t read this input.**\n **Expected roles and weights to be separated by {e.separator}**\n **Invalid role found: {e.roles}**\n **Weights must be numbers.**\n **Not every role has a weight assigned.**',
-                            inline=False)
-            embed.add_field(name=f'🔹 **duration:** `Set the duration /deadline for the Poll.`',
-                            value=f'**When should the poll be closed?**\n'
-                                  'If you want the poll to last indefinitely (until you close it), type `0`.\n'
-                                  f'Otherwise tell me when the poll should close in relative or absolute terms. \n'
-                                  'You can specify a timezone if you want.\n'
-                                  '\n'
-                                  'Examples: `in 6 hours` or `next week CET` or `aug 15th 5:10` or `15.8.2019 11pm EST`\n'
-                                  'Error message you might get: **Specify the deadline in a format I can understand.**\n **Type Error.**\n **{e.date.strftime("%d-%b-%Y %H:%M")} is in the past.**',
-                            inline=False)
 
         elif page == '🔍':
             embed.add_field(name='🔍 Show Polls',
@@ -333,6 +215,10 @@ class Help(commands.Cog):
                             value='This will change the bot prefix for your server. If you want to use a trailing '
                                   'whitespace, use "\w" instead of " " (discord deletes trailing whitespaces).',
                             inline=False)
+            embed.add_field(name=f'🔹 **Change error message** `/errormessage`',
+                            value="This will change the error message that get send if the bot can't DM a user.\n"
+                                  'it will change to enable or disabled.',
+                            inline=False)
 
         elif page == '❔':
             embed.add_field(name='❔ Debugging',
@@ -350,15 +236,14 @@ class Help(commands.Cog):
 
         elif page == '💖':
             embed.add_field(name='💖 RT Pollmaster 💖',
-                            value='If you enjoy the bot, you can show your appreciation by giving him an upvote on Discordbots.',
+                            value='If you enjoy the bot, you can show your appreciation by giving him an upvote on top.gg.',
                             inline=False)
             embed.add_field(name='🔹 **Developer**',
-                            value='Original code by Newti#0654'
-                                  '\nmodifed/fix/improved by RJGamer1002#8253',
+                            value='developed by RJGamer1002 (<@183940132129210369>)',
                             inline=False)
             embed.add_field(name='🔹 **Support**',
-                            value='You can support RT Pollmaster by sending an upvote his way or by clicking the donate link '
-                                  'on the discordbots page:\n not available',
+                            value='You can support RT Pollmaster by sending an upvote his way or by clicking the ~~donate link~~ '
+                                  'on the top.gg page:\n https://top.gg/bot/753217458029985852',
                             inline=False)
             embed.add_field(name='🔹 **Support Server**',
                             value='If you need help with RT Pollmaster, want to try him out or would like to give feedback '
@@ -367,7 +252,7 @@ class Help(commands.Cog):
             embed.add_field(name='🔹 **Github**',
                             value='The full python source code is on my Github: https://github.com/RJ1002/pollmaster',
                             inline=False)
-            embed.add_field(name='**Thanks for using RT Pollmaster!** 💗', value='Newti, RJGame1002', inline=False)
+            embed.add_field(name='**Thanks for using RT Pollmaster!** 💗', value='RJGame1002', inline=False)
         else:
             return None
 
@@ -375,26 +260,25 @@ class Help(commands.Cog):
 
     # @commands.hybrid_command(name="pmhelp",description="Display commands")
 
-    @commands.hybrid_command(name="help", description="Display commands")
+    @commands.hybrid_command(name="help", description="Display commands", with_app_command=True)
     async def pmhelp(self, ctx):
         server = await ask_for_server(self.bot, ctx.message)
         if not server:
             return
 
+        if not isinstance(ctx.channel, discord.TextChannel):
+            await ctx.reply("`help` can only be used in a server text channel.", delete_after=60)
+            return
         permissions = ctx.message.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
             await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
-            return
-
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.response.send_message("`help` can only be used in a server text channel.", delete_after=60)
             return
         
         guild = ctx.guild
         if not guild:
             await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.", delete_after=60)
             return
-
+        print('help menu started!')
         pre = await get_server_pre(self.bot, server)
         rct = 1
         while rct is not None:

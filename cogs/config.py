@@ -1,7 +1,9 @@
 import logging
+import discord
 from discord.ext import commands
 from discord import app_commands
-from discord import Role
+from discord import Role, User
+from bson import ObjectId
 
 class Config(commands.Cog):
     def __init__(self, bot):
@@ -17,7 +19,7 @@ class Config(commands.Cog):
         server = ctx.message.guild
         if pre.endswith('\w'):
             pre = pre[:-2]+' '
-            if len(pre.strip) > 0:
+            if len(pre.strip()) > 0:
                 msg = f'The server prefix has been set to `{pre}` Use `{pre}prefix <prefix>` to change it again.'
             else:
                 await ctx.send('Invalid prefix.')
@@ -77,6 +79,34 @@ class Config(commands.Cog):
             await ctx.send(f'Server role `{role}` can now create and manage their own polls.')
         else:
             await ctx.send(f'Server role `{role}` not found.')
+            
+    @app_commands.command(name="errormessage", description="to enable or disable error message (Beta)")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def errormessage(self, ctx):
+        print('error message ran!')
+        server = ctx.guild
+        result = await self.bot.db.config.find_one({'_id': str(server.id)},{'_id': 1, 'error_mess': 2})
+        
+        if result and not result.get('error_mess'):
+            print('error config not found!', result.get('error_mess'))
+            await self.bot.db.config.update_one({'_id': str(server.id)}, {'$set': {'error_mess': 'True'}}, upsert=True)
+            await ctx.response.send_message("error messages was set to `enable`!!", delete_after=60)
+            
+        elif result and result.get('error_mess'):
+            print('error resultget!', result.get('error_mess'))
+            if result.get('error_mess') == 'True':
+                await self.bot.db.config.update_one({'_id': str(server.id)}, {'$set': {'error_mess': 'False'}}, upsert=True)
+                await ctx.response.send_message("error messages was set to `disabled`!!", delete_after=60)
+                print('error result true')
+                
+            elif result and result.get('error_mess') == 'False':
+                await self.bot.db.config.update_one({'_id': str(server.id)}, {'$set': {'error_mess': 'True'}}, upsert=True)
+                await ctx.response.send_message("error messages was set to `enable`!!", delete_after=60)
+                print('error result false')
+            else:
+                await ctx.response.send_message("unknown error has occurred. please report to dev!", delete_after=60)
+        else:
+            await ctx.response.send_message("unknown error has occurred. please report to dev!", delete_after=60)
 
 
 async def setup(bot):

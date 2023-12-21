@@ -1,9 +1,11 @@
 import asyncio
+import logging
 
 import discord
 
 from essentials.settings import SETTINGS
 
+logger = logging.getLogger('discord')
 
 async def get_pre(bot, message):
     """Gets the prefix for a message."""
@@ -22,13 +24,16 @@ async def get_pre(bot, message):
 
 async def get_server_pre(bot, server):
     """Gets the prefix for a server."""
+    serverowner = str(server.owner_id)
     try:
         result = bot.pre[str(server.id)]
     except KeyError:
+        print('bot config was not found for server:', server.id)
+        logger.info(f'bot config was not found for server: {server.id}')
         # if not cached, insert into DB (this will override the configs, but they were not found to begin with)
         await bot.db.config.update_one(
             {'_id': str(server.id)},
-            {'$set': {'prefix': 'pm!', 'admin_role': 'polladmin', 'user_role': 'polluser'}},
+            {'$set': {'prefix': 'pm!', 'admin_role': 'polladmin', 'user_role': 'polluser', 'in_guild': 'True', 'ownerid': serverowner, 'timeleave': 'None'}},
             upsert=True
         )
         bot.pre[str(server.id)] = 'pm!'
@@ -52,7 +57,7 @@ async def get_servers(bot, message, short=None):
             query = bot.db.polls.find({'short': short})
             if query is not None:
                 server_ids_with_short = [poll['server_id'] async for poll in query]
-                servers_with_short = [bot.get_guild(x) for x in server_ids_with_short]
+                servers_with_short = [bot.get_guild(int(x)) for x in server_ids_with_short]
                 shared_servers_with_short = list(set(servers_with_short).intersection(set(list_of_shared_servers)))
                 if shared_servers_with_short.__len__() >= 1:
                     return shared_servers_with_short
