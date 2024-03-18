@@ -1008,6 +1008,11 @@ class Poll:
             cmd += " -h"
         if self.roles != ["@everyone"]:
             cmd += " -r \"" + ", ".join(self.roles) + "\""
+        if (len(self.weights_numbers) > 0) and (len(self.weights_roles) > 0):
+            weight = []
+            for w, n in zip(self.weights_roles, self.weights_numbers):
+                weight.append(f"{w}: {n}")
+            cmd += " -w \"" + ", ".join(weight) + "\""
         if not self.active:
             cmd += " -p \"specify activation time\""
         if self.duration == 0:
