@@ -11,7 +11,7 @@ import pytz
 
 from essentials.messagecache import MessageCache
 from essentials.membercache import MemberCache
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import app_commands
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -99,6 +99,7 @@ async def on_ready():
         print("sync!")
         
     bot.owner = SETTINGS.owner_id
+    bot.launch_time = dt.datetime.utcnow()
     
     # # check discord server configs
     # try:
@@ -156,7 +157,7 @@ async def on_command_error(ctx, e):
             e = discord.Embed(
                 title=f"Error With command: {ctx.command.name}",
                 description=f"```py\n{type(e).__name__}: {str(e)}\n```\n\nContent:{ctx.message.content}"
-                            f"\n\tServer: {ctx.message.guild}\n\tServerid: {ctx.message.guild.id}\n\tChannel: #{ctx.message.channel}"
+                            f"\n\tServer: {ctx.message.guild}\n\tServerid: {ctx.message.guild.id}\n\tChannel: #{ctx.message.channel}\n\tChannelType: {ctx.message.channel.type}"
                             f'\n\tAuthor: @{ctx.message.author}\n\tAuthorid: {ctx.message.author.id}',
                 timestamp=ctx.message.created_at
             )
@@ -190,6 +191,7 @@ async def on_error(e, ctx):
             commands.CheckFailure,
             commands.CommandOnCooldown,
             commands.MissingPermissions,
+            discord.RawReactionActionEvent,
         )
 
         if isinstance(e, ignored_exceptions):
@@ -227,7 +229,7 @@ async def on_guild_join(server):
     if result is None:
         await bot.db.config.update_one(
             {'_id': str(server.id)},
-            {'$set': {'prefix': 'pm!', 'admin_role': 'polladmin', 'user_role': 'polluser', 'in_guild': 'True', 'ownerid': serverowner, 'timeleave': 'None', 'error_mess': 'True'}},
+            {'$set': {'prefix': 'pm!', 'admin_role': 'polladmin', 'user_role': 'polluser', 'in_guild': 'True', 'ownerid': serverowner, 'timeleave': 'None', 'error_mess': 'True', 'closedpoll_mess': 'True'}},
             upsert=True
         )
         bot.pre[str(server.id)] = 'pm!'
@@ -243,15 +245,15 @@ async def on_guild_join(server):
 async def on_guild_remove(server):
     result = await bot.db.config.find_one({'_id': str(server.id)})
     timeleft = dt.datetime.utcnow().replace(tzinfo=pytz.utc)
-    print('bot was removed from server:', server.id)
-    logger.info(f'bot was removed from server: {server.id}')
+    print('bot was removed from server:', server.id, 'name:', server.name)
+    logger.info(f'bot was removed from server: {server.id} name: {server.name}')
     if result:
         await bot.db.config.update_one(
             {'_id': str(server.id)},
             {'$set': {'in_guild': 'False', 'timeleave': timeleft}},
             upsert=True
         )
-        bot.pre[str(server.id)] = 'pm!'
+        #bot.pre[str(server.id)] = 'pm!'
 
 async def main():
     async with bot:

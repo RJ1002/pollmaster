@@ -41,7 +41,7 @@ AZ_EMOJIS = [(b'\\U0001f1a'.replace(b'a', bytes(hex(224 + (6 + i))[2:], "utf-8")
 
 
 class Poll:
-    def __init__(self, bot, ctx=None, server=None, channel=None, load=False):
+    def __init__(self, bot, ctx=None, server=None, channel=None, ping_role=None, load=False):
 
         self.bot = bot
         self.cursor_pos = 0
@@ -51,17 +51,18 @@ class Poll:
         self.full_votes = []
         self.unique_participants = set()
         self.wizard_messages = []
+        self.ping_role = ping_role
 
         if not load and ctx:
             if server is None:
-                server = ctx.message.guild
+                server = ctx.guild
 
             if channel is None:
-                channel = ctx.message.channel
+                channel = ctx.channel
 
             self.id = None
 
-            self.author = ctx.message.author
+            self.author = ctx.user
 
             self.server = server
             self.channel = channel
@@ -103,6 +104,8 @@ class Poll:
             return ['😍', '👍', '🤐', '👎', '🤢']
         elif number == 4:
             return ['in favour', 'against', 'abstaining']
+        elif number == 5:
+            return ['🎉']
 
     async def is_open(self, update_db=True):
         if self.server is None:
@@ -130,7 +133,7 @@ class Poll:
         embed = discord.Embed(title="Poll creation Wizard", description=text, color=SETTINGS.color)
         if footer:
             embed.set_footer(text="Type `stop` to cancel the wizard. \n Reply to this message or click a button to respond to question")
-        msg = await ctx.reply(embed=embed, view=view)
+        msg = await ctx.followup.send(embed=embed, view=view)
         self.wizard_messages.append(msg)
         return msg
 
@@ -230,7 +233,7 @@ class Poll:
            if role_list.startswith(await get_pre(self.bot, reply)):
                await self.wizard_says(ctx, f'You can\'t use bot commands during the Poll Creation Wizard.\n'
                                       f'Stopping the Wizard and then executing the command:\n`{reply.data["values"]}`',
-                                      footer=False)
+                                      footer=False, view=view)
                raise StopWizard
            elif role_list.lower() == 'stop':
                await self.wizard_says(ctx, 'Poll Wizard stopped.', view=view,  footer=False)
@@ -243,7 +246,7 @@ class Poll:
            if reply.data['custom_id'].startswith(await get_pre(self.bot, reply)):
                await self.wizard_says(ctx, f'You can\'t use bot commands during the Poll Creation Wizard.\n'
                                       f'Stopping the Wizard and then executing the command:\n`{reply.data["custom_id"]}`',
-                                      footer=False)
+                                      footer=False, view=view)
                raise StopWizard
            elif reply.data['custom_id'].lower() == 'stop':
                await self.wizard_says(ctx, 'Poll Wizard stopped.', view=view,  footer=False)
@@ -530,7 +533,7 @@ class Poll:
         async def get_valid(in_reply):
             if not in_reply:
                 raise InvalidInput
-            preset = ['1','2','3','4']
+            preset = ['1','2','3','4','5']
             split = [r.strip() for r in in_reply.split(",")]
 
             if split.__len__() == 1:
@@ -562,14 +565,17 @@ class Poll:
 
         text = ("**Choose the options/answers for your poll.**\n"
                 "Either chose a preset of options or type your own options, separated by commas.\n"
+                "For Giveaway mode option: it is in beta so there might be issue with it.\n"
                 "\n"
                 "**1** - :white_check_mark: :negative_squared_cross_mark:\n"
                 "**2** - :thumbsup: :zipper_mouth: :thumbsdown:\n"
                 "**3** - :heart_eyes: :thumbsup: :zipper_mouth:  :thumbsdown: :nauseated_face:\n"
                 "**4** - in favour, against, abstaining\n"
+                "**5** - :tada: (giveaway mode) NEW!\n"
                 "\n"
-                "Example for custom options:\n"
-                "**apple juice, banana ice cream, kiwi slices** ")
+                "Example(s) for custom options:\n"
+                "**apple juice, banana ice cream, kiwi slices** \n :heart: ,:blue_heart: ,:orange_heart: ,:green_heart: \n **Q1, Q2, Q3, Q4**\n"
+                "Giveaway mode:\nadd only :tada: emoji and once the poll is closed you can use /draw to pick a random winner.")
         message = await self.wizard_says(ctx, text, view=view)
 
         while True:
@@ -716,7 +722,7 @@ class Poll:
             if split.__len__() == 1 and split[0] in ['0', 'all', 'everyone']:
                 return ['@everyone']
 
-            if n_roles <= 3 and not force:
+            if n_roles <= 3 and not force: #role list for embed message??
                 if not all([r.isdigit() for r in split]):
                     raise ExpectedInteger
                 elif any([int(r) > n_roles for r in split]):
@@ -850,6 +856,86 @@ class Poll:
                 await self.add_error(message, f'**Weights must be numbers.**')
             except WrongNumberOfArguments:
                 await self.add_error(message, f'**Not every role has a weight assigned.**')
+                
+    async def set_thumbnail(self, ctx, force=None):
+        """Set the thumbnail of the Poll."""
+        #print('set_thumbnail ran!', force)
+        #print('set_thumbnail ran!self', self)
+        #print('set_thumbnail ran!ctx', ctx)
+        view=self.thumbnailbuttons(ctx)
+        async def get_valid(in_reply):
+            if not in_reply:
+                raise InvalidInput
+            #no_thumbnail = ['0','none']
+            #min_len = 3
+            #max_len = 400
+            in_reply = self.sanitize_string(in_reply)
+            if not in_reply:
+                #print('set_name ran!InvalidInput')
+                raise InvalidInput
+            elif in_reply == '0':
+                #print('thumbnail skip')
+                return "default"
+            #elif min_len <= in_reply.__len__() <= max_len:
+            #    return in_reply
+            elif regex.search(".png$|.jpg$", in_reply):
+                if regex.search("^https://", in_reply):
+                    #print('test thumbnail png worked!')
+                    return in_reply
+                else:
+                    raise InvalidInput
+            else:
+                #print('set_name ran!InvalidInputv2')
+                raise InvalidInput
+            #preset = ['1','2','3','4']
+            #split = [r.strip() for r in in_reply.split(",")]
+
+            # if split.__len__() == 1:
+            #     if split[0] in preset:
+            #         return int(split[0])
+            #     else:
+            #         raise WrongNumberOfArguments
+            # elif 1 < split.__len__() <= 18:
+            #     split = [self.sanitize_string(o) for o in split]
+            #     if any([len(o) < 1 for o in split]):
+            #         raise InvalidInput
+            #     else:
+            #         return split
+            # else:
+            #     raise WrongNumberOfArguments
+            
+        try:
+            self.thumbnail = await get_valid(force)
+            return
+        except InputError:
+            #print('set_name ran!InputError')
+            pass
+
+
+        text = ("**NEW!: Choose a thumbnail for your poll. (Beta)**\n"
+                "Either chose a preset of option or type your own option\n"
+                "**Notice!**: This option is in Beta so there might be issue/bugs.\n"
+                "\n"
+                "**0** - skip (default)\n"
+                "\n"
+                "Example:\n"
+                "**none** ")
+        message = await self.wizard_says(ctx, text, view=view)
+
+        while True:
+            #print('while ran set_thumbnail')
+            try:
+                if force:
+                    reply = force
+                    force = None
+                else:
+                    reply = await self.get_user_reply(ctx)
+                self.thumbnail = await get_valid(reply)
+                #self.thumbnail = regex.sub(" >> ", "\n", self.thumbnail)
+                await self.add_vaild(message, self.thumbnail)
+                break
+            except InvalidInput:
+                await self.add_error(message, '**The thumbnail can only be .png or .jpg and the url need to start with https://**')
 
     async def set_duration(self, ctx, force=None):
         """Set the duration /deadline for the Poll."""
@@ -890,7 +976,7 @@ class Poll:
                 "Otherwise tell me when the poll should close in relative or absolute terms. "
                 "You can specify a timezone if you want.\n"
                 "\n"
-                "Examples: `in 6 hours` or `next week CET` or `aug 15th 5:10` or `15.8.2019 11pm EST`")
+                "Examples: `in 6 hours` or `next week CET` or `aug 15th 5:10` \nor `15.8.2019 11pm EST`")
         message = await self.wizard_says(ctx, text, view=view)
 
         while True:
@@ -923,7 +1009,7 @@ class Poll:
             self.options_reaction = list(dict.fromkeys(self.options_reaction))
 
     async def clean_up(self, channel):
-        if isinstance(channel, discord.TextChannel):
+        if isinstance(channel, discord.TextChannel) or isinstance(channel, discord.Thread):
             self.bot.loop.create_task(channel.delete_messages(self.wizard_messages))
 
     async def ask_for_input_dm(self, user, title, text):
@@ -1031,6 +1117,10 @@ class Poll:
             aid = 0
         else:
             aid = self.author.id
+        if self.ping_role is None:
+            prole = 0
+        else:
+            prole = self.ping_role
         return {
             'server_id': str(self.server.id),
             'channel_id': str(cid),
@@ -1055,7 +1145,9 @@ class Poll:
             'active': self.active,
             'activation': self.activation,
             'activation_tz': self.activation_tz,
-            'votes': self.votes
+            'votes': self.votes,
+            'thumbnail': self.thumbnail,
+            'ping_role': str(prole)
         }
 
     async def to_export(self):
@@ -1084,11 +1176,21 @@ class Poll:
                 winning_options.append(o)
         self.name = regex.sub("\n", " >> ", self.name)
         deadline_str = await self.get_deadline(string=True)
+        if self.ping_role:
+            print("yes send role ping!!")
+            try:
+                getprole = self.server.get_role(int(self.ping_role))
+            except:
+                getprole = None
+            print("yes send role ping!!v2", getprole)
+        else:
+            print("no role ping!!")
+            getprole = None
         export = (f'--------------------------------------------\n'
                   f'RT POLLMASTER DISCORD EXPORT\n'
                   f'--------------------------------------------\n'
                   f'Server name (ID): {self.server.name} ({self.server.id})\n'
-                  f'Owner of the poll: {self.author.name}\n'
+                  f'Owner of the poll: {f"{self.author.name}" if self.author is not None else "<Deleted User>" }\n'
                   f'Time of creation: {self.time_created.strftime("%d-%b-%Y %H:%M %Z")}\n'
                   f'--------------------------------------------\n'
                   f'POLL SETTINGS\n'
@@ -1100,7 +1202,9 @@ class Poll:
                   f'Answer options: {", ".join(self.options_reaction)}\n'
                   f'Allowed roles: {", ".join(self.roles) if self.roles.__len__() > 0 else "@everyone"}\n'
                   f'Weights for roles: {weight_str}\n'
+                  f'ping role: {f"{getprole.name}" if getprole else "None"}\n'
                   f'Deadline: {deadline_str}\n'
+                  f'thumbnail: {self.thumbnail}\n'
                   f'--------------------------------------------\n'
                   f'POLL RESULTS\n'
                   f'--------------------------------------------\n'
@@ -1118,11 +1222,16 @@ class Poll:
                 # member = self.server.get_member(int(user_id))
                 # member = await self.bot.fetch_user(int(user_id))
                 member = await self.bot.member_cache.get(self.server, int(user_id))
+                if member is None:
+                    try:
+                        member = await self.bot.fetch_user(int(user_id))
+                    except:
+                        pass
 
                 if not member:
                     name = "<Deleted User>"
                 else:
-                    name = member.display_name
+                    name = member.name
                 if not name:
                     name = member.name
 
@@ -1162,10 +1271,15 @@ class Poll:
                 # member = self.server.get_member(int(user_id))
                 # member = await self.bot.fetch_user(int(user_id))
                 member = await self.bot.member_cache.get(self.server, int(user_id))
+                if member is None:
+                    try:
+                        member = await self.bot.fetch_user(int(user_id))
+                    except:
+                        pass
                 if not member:
                     name = "<Deleted User>"
                 else:
-                    name = member.display_name
+                    name = member.name
                 if not name:
                     name = member.name
 
@@ -1229,7 +1343,7 @@ class Poll:
         self.options_reaction_emoji_only = True
         for reaction in self.options_reaction:
             if reaction not in self.bot.emoji_dict:
-                e_id = re.findall(r':(\d+)>', reaction)
+                e_id = re.findall(r':(\d+)>$', reaction)
                 emoji = None
                 if e_id:
                     emoji = self.bot.get_emoji(int(e_id[0]))
@@ -1241,10 +1355,15 @@ class Poll:
         self.id = ObjectId(str(d['_id']))
         self.server = self.bot.get_guild(int(d['server_id']))
         self.channel = self.bot.get_channel(int(d['channel_id']))
-        if self.server != None:
+        if self.server is not None:
             # self.author = await self.bot.fetch_user(int(d['author']))
             # self.author = self.server.get_member(int(d['author']))
             self.author = await self.bot.member_cache.get(self.server, int(d['author']))
+            if self.author is None:
+                try:
+                    self.author = await self.bot.fetch_user(int(d['author']))
+                except:
+                    pass
         else:
             self.author = None
         self.name = d['name']
@@ -1300,6 +1419,18 @@ class Poll:
 
         self.cursor_pos = 0
         self.votes = d['votes']
+        try:
+            #print("from_dict ping_role yes")
+            self.ping_role = d['ping_role']
+        except:
+            #print("from_dict ping_role no")
+            self.ping_role = "0"
+        try:
+            #print("from_dict thumbnail yes")
+            self.thumbnail = d['thumbnail']
+        except:
+            #print("from_dict thumbnail no")
+            self.thumbnail = "default"
 
         self.open = await self.is_open()
         self.active = await self.is_active()
@@ -1374,7 +1505,11 @@ class Poll:
         embed = discord.Embed(title='', colour=SETTINGS.color)  # f'Status: {"Open" if self.is_open() else "Closed"}'
         embed.set_author(name=f' >> {self.short} ',
                          icon_url=SETTINGS.author_icon)
-        embed.set_thumbnail(url=SETTINGS.report_icon)
+        #embed.set_thumbnail(url=SETTINGS.report_icon)
+        if not self.thumbnail == "default":
+            embed.set_thumbnail(url=self.thumbnail)
+        else:
+            embed.set_thumbnail(url=SETTINGS.report_icon)
 
         # ## adding fields with custom, length sensitive function
         if not await self.is_active():
@@ -1467,7 +1602,33 @@ class Poll:
         return embed
 
     async def post_embed(self, destination):
-        msg = await destination.send(embed=await self.generate_embed())
+        if self.ping_role != "0" and self.open:
+            print("yes send role ping!!")
+            try:
+                getprole = destination.guild.get_role(int(self.ping_role))
+            except:
+                getprole = None
+            print("yes send role ping!!v2", getprole)
+        else:
+            print("no role ping!!")
+            getprole = None
+        try:
+            try:
+                #msg = await destination.send(embed=await self.generate_embed())
+                msg = await destination.send(embed=await self.generate_embed(), content=f'{f"{getprole.mention}"if getprole else ""}')#content=f'<@{}'
+            except AttributeError:
+                msg = await destination.followup.send(embed=await self.generate_embed(), content=f'{f"{getprole.mention}"if getprole else ""}')
+        except discord.HTTPException:
+            errormessage = traceback.format_exc(limit=0)
+            embederror = discord.Embed(title='Poll Embed Error!', color=discord.Color.red())
+            if errormessage.find("Invalid Form Body") >= 0:
+                print('post_embed error has occurred!')
+                embederror.add_field(name=f'Error type: embed', value='A embed error has occurred. Please report to the Dev!', inline=False )
+                embederror.set_footer(text=f'\nThis message will self-destruct in 1 min.')
+                await destination.send(embed=embederror, delete_after=60)
+            else:
+                print('error = unknown', traceback.format_exc())
+            msg = await destination.send(embed=await self.generate_embed())
         if self.reaction and await self.is_open() and await self.is_active():
             if self.options_reaction_default:
                 for r in self.options_reaction:
@@ -1578,14 +1739,14 @@ class Poll:
         # find index of choice or cancel vote
         choice = 'invalid'
         if self.options_reaction_default:
-            if option in self.options_reaction:
-                choice = self.options_reaction.index(option)
+            if option.name in self.options_reaction: #might have to add option.name
+                choice = self.options_reaction.index(option.name)
         else:
-            if option in AZ_EMOJIS:
-                choice = AZ_EMOJIS.index(option)
+            if option.name in AZ_EMOJIS:
+                choice = AZ_EMOJIS.index(option.name)
             elif self.options_reaction_emoji_only:
                 for i, opts in enumerate(self.options_reaction):
-                    if option in opts:
+                    if option.name in opts:
                         choice = i
 
         if choice == 'invalid':
@@ -1645,6 +1806,8 @@ class Poll:
             embed = discord.Embed(title='', description=say_text, colour=SETTINGS.color)
             embed.set_author(name='RT Pollmaster', icon_url=SETTINGS.author_icon)
             #self.bot.loop.create_task(user.send(embed=embed))
+            if not self.anonymous and not self.hide_count:
+                await message.remove_reaction(option, user)
             try:
                 await user.send(embed=embed)
             except discord.Forbidden:
@@ -1959,8 +2122,12 @@ class Poll:
         @discord.ui.button(label="4", row=1, style=discord.ButtonStyle.blurple, custom_id='4')
         async def four_callback(self, interaction: discord.Interaction, button: Button):
             await interaction.response.defer()
+        
+        @discord.ui.button(label="5", row=1, style=discord.ButtonStyle.blurple, custom_id='5')
+        async def five_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
 
-        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        @discord.ui.button(label="type answer here", row=2, style=discord.ButtonStyle.green, custom_id='modal')
         async def name_callback(self, interaction: discord.Interaction, button: Button):
             class Answer(Modal):
                 timeout=600
@@ -2098,6 +2265,33 @@ class Poll:
                 timeout=600
                 title="Poll creation Wizard"
                 answer = TextInput(label='type your answer(`stop` to stop the Wizard)', style=discord.TextStyle.short)
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    await interaction.response.defer()
+
+            await interaction.response.send_modal(Answer())
+    
+    class thumbnailbuttons(discord.ui.View):
+        def __init__(self, ctx):
+            self.poll = Poll(self)
+            super().__init__(timeout=660)
+            self.ctx = ctx
+            self.wizard_messages = self.poll.wizard_messages
+
+        @discord.ui.button(label='stop', row=2, style=discord.ButtonStyle.red, custom_id='stop')
+        async def stop_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="0", row=1, style=discord.ButtonStyle.blurple, custom_id='0')
+        async def zero_callback(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.defer()
+
+        @discord.ui.button(label="type answer here", row=1, style=discord.ButtonStyle.green, custom_id='modal')
+        async def name_callback(self, interaction: discord.Interaction, button: Button):
+            class Answer(Modal):
+                timeout=600
+                title="Poll creation Wizard"
+                answer = TextInput(label='what is the url of your image?', style=discord.TextStyle.short, placeholder="make sure it start with https:// and end with .png or .jpg")
 
                 async def on_submit(self, interaction: discord.Interaction):
                     await interaction.response.defer()

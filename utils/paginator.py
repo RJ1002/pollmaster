@@ -30,7 +30,7 @@ async def embed_list_paginated(ctx, bot, pre, items, item_fct, base_embed, foote
         if not isinstance(msg.channel, discord.abc.PrivateChannel):
             await msg.clear_reactions()
     else:
-        msg = await ctx.send(embed=embed)
+        msg = await ctx.followup.send(embed=embed)
 
     # add reactions
     if start > 0:

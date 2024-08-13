@@ -20,7 +20,7 @@ class Help(commands.Cog):
     async def embed_list_reaction_handler(self, ctx, page, pre, msg=None):
         embed = self.get_help_embed(page, pre)
         if msg is None:
-            msg = await ctx.send(embed=embed)
+            msg = await ctx.followup.send(embed=embed)
             # add reactions
             for emoji in self.pages:
                 await msg.add_reaction(emoji)
@@ -37,13 +37,13 @@ class Help(commands.Cog):
             try:
                 print('help menu deleted!')
                 await msg.delete()
-                await ctx.message.delete()
+                await ctx.followup.delete()
             except discord.errors.NotFound:
                 # message already deleted
                 pass
             return None
         else:
-            if isinstance(reaction.message.channel, discord.TextChannel):
+            if isinstance(reaction.message.channel, discord.TextChannel) or isinstance(reaction.message.channel, discord.Thread):
                 await reaction.message.remove_reaction(reaction.emoji, user)
             return reaction
 
@@ -58,13 +58,13 @@ class Help(commands.Cog):
 
         if page == '🏠':
             embed.add_field(name='📣 Important Info!:',
-                            value=f'⚠️**Issue!:** make sure you don''t have more then one wizard running!! stop/cancel the wizard before starting another one or it could cause issues in creating a poll.',
+                            value=f'⚠️**Issue!:** make sure you don''t have more then one wizard running!! stop/cancel the wizard before starting another one or it could cause issues in creating a poll.\n'
+                                    f'Please join our [discord server](https://discord.gg/sjrDM6WES2) for support, info about Updates/changes to the bot, when outage/scheduled maintenance is happening, Beta testing, and more!!',
                             inline=False)
             # POLL CREATION SHORT
             embed.add_field(name='🆕 Making New Polls',
-                            value=f'`{pre}quick` | `{pre}new` | `{pre}advanced` | `{pre}prepare` | `{pre}cmd <args>`\n'
-                                  f'`/quick` | `/new` | `/advanced` | `/prepare` | `/cmd <args>`\n'
-                                  f'`/quickslash` | `/newslash` | `/advancedslash` | `/prepareslash`',
+                            value=f'</quick:1102089006583382129> | </new:1102089006583382132> | </advanced:1102089006583382131> | </prepare:1102089006583382130> | </cmd:1102089006583382128> `<args>`\n'
+                                  f'</quickslash:1159928841758843035> | </newslash:1159928841758843039> | </advancedslash:1159928841758843037> | </prepareslash:1159928841758843036>',
                             inline=False)
             # embed.add_field(name='Commands', value=f'`{pre}quick` | `{pre}new` | `{pre}prepared`', inline=False)
             # embed.add_field(name='Arguments', value=f'Arguments: `<poll question>` (optional)', inline=False)
@@ -73,8 +73,7 @@ class Help(commands.Cog):
 
             ## POLL CONTROLS
             embed.add_field(name='🔍 Show Polls',
-                            value=f'`{pre}show` | `{pre}show <label>` | `{pre}show <category>`\n'
-                                  f'`/show` | `/show <label>` | `/show <category>`', inline=False)
+                            value=f'</show:1102089006335922265> | `/show <label>` | `/show <category>`', inline=False)
             # embed.add_field(name='Command', value=f'`{pre}show (label)`', inline=False)
             # embed.add_field(name='Arguments', value=f'Arguments: `open` (default) | `closed` | `prepared` | '
             #                                         f'`<poll_label>` (optional)', inline=False)
@@ -83,8 +82,7 @@ class Help(commands.Cog):
 
             # POLL CONTROLS
             embed.add_field(name='🕹 Poll Controls',
-                            value=f'`{pre}copy` | `{pre}close` | `{pre}export` | `{pre}delete` | `{pre}activate`\n '
-                                  f'`/copy` | `/close` | `/export` | `/delete` | `/activate`',
+                            value=f'</copy:1102089006335922263> | </close:1102089006335922262> | </export:1102089006335922264> | </delete:1102089006335922261> | </activate:1102089006335922259>',
                             inline=False)
             # embed.add_field(name='Commands', value=f'`{pre}close` | `{pre}export` | `{pre}delete` | `{pre}activate` ',
             #                 inline=False)
@@ -94,20 +92,23 @@ class Help(commands.Cog):
 
             # POLL CONTROLS
             embed.add_field(name='🛠 Configuration',
-                            value=f'`{pre}userrole [role]` | `{pre}adminrole [role]` | `{pre}prefix <new_prefix>`\n '
-                                  f'`/userrole [role]` | `/adminrole [role]` | `/prefix <new_prefix>` | `/errormessage`',
+                            value=f'</userrole:1102089006335922258> `[role]` | </adminrole:1102089006335922257> `[role]` | </prefix:1102089006335922256> `<new_prefix>` | </settings:1196482521513328722>',
                             inline=False
                             )
 
             # DEBUGGING
             embed.add_field(name='❔ Debugging',
-                            value=f'`@debug` | `@mention` | `@mention <tag>`\n '
-                                  f'`/debug` | `/mention` | `/mention <tag>` ',
+                            value=f'`@debug`\n '
+                                  f'</debug:1102089006583382134> ',
                             inline=False
                             )
             # ABOUT
             embed.add_field(name='💖 About RT Pollmaster',
                             value='More infos about RT Pollmaster, the developer, where to go for further help and how you can support us.',
+                            inline=False)
+            # LINKS                
+            embed.add_field(name=':paperclip: Useful Links',
+                            value='[Support Server](https://discord.gg/sjrDM6WES2), [Top.gg page](https://top.gg/bot/753217458029985852), [Donation page](https://ko-fi.com/rtpollmaster)',
                             inline=False)
 
         elif page == '🆕':
@@ -119,27 +120,27 @@ class Help(commands.Cog):
                                   f'**Notice!:** for commands `/quickslash` and `/newslash` and `/advancedslash` and `/prepareslash` \n They have the same options as there normal commands but each option is in the slash command.\n'
                                   '⚠️**Issue!:** make sure you don''t have more then one wizard running!! stop/cancel the wizard before starting another one or it could cause issues in creating a poll.\n(your allowed more then one wizard if it from a different account)',
                             inline=False)
-            embed.add_field(name=f'🔹 **Quick Poll:** `{pre}quick` or `/quick` or `/quickslash`',
+            embed.add_field(name=f'🔹 **Quick Poll:** </quick:1102089006583382129> or </quickslash:1159928841758843035>',
                             value='If you just need a quick poll, this is the way to go. All you have to specify is the '
                                   'question and your answers; the rest will be set to default values.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Basic Poll:** `{pre}new` or `/new` or `/newslash`',
+            embed.add_field(name=f'🔹 **Basic Poll:** </new:1102089006583382132> or </newslash:1159928841758843039>',
                             value='This command gives control over the most common settings. A step by step wizard will guide '
                                   'you through the process and you can specify options such as Multiple Choice, '
                                   'Anonymous Voting and Deadline.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Advanced Poll:** `{pre}advanced` or `/advanced` or `/advancedslash`',
+            embed.add_field(name=f'🔹 **Advanced Poll:** </advanced:1102089006583382131> or </advancedslash:1159928841758843037>',
                             value='This command gives you full control over your poll. A step by step wizard will guide '
                                   'you through the process and you can specify additional options such as Hide Vote Count, '
                                   'Role Restrictions, Role Weights or Custom Write-In Answers (Survey Flags).',
                             inline=False)
-            embed.add_field(name=f'🔹 **Prepare and Schedule:** `{pre}prepare` or `/prepare` or `/prepareslash`',
+            embed.add_field(name=f'🔹 **Prepare and Schedule:** </prepare:1102089006583382130> or </prepareslash:1159928841758843036>',
                             value=f'Similar to `{pre}advanced`, this gives you all the options. But additionally, the poll will '
                                   'be set to \'inactive\'. You can specify if the poll should activate at a certain time '
                                   f'and/or if you would like to manually `{pre}activate` it. '
                                   'Perfect if you are preparing for a team meeting!',
                             inline=False)
-            embed.add_field(name=f'🔹 **-Advanced- Commandline:** `{pre}cmd <arguments>` or `/cmd <arguments>`',
+            embed.add_field(name=f'🔹 **-Advanced- Commandline:** </cmd:1102089006583382128> `<arguments>`',
                             value=f'For the full syntax type `{pre}cmd help`\n'
                                   f'Similar to version 1 of the bot, with this command you can create a poll in one message. '
                                   f'Pass all the options you need via command line arguments, the rest will be set to '
@@ -153,12 +154,12 @@ class Help(commands.Cog):
                             value='All users can display and list polls, with the exception of prepared polls. '
                                   'Voting is done simply by using the reactions below the poll.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Show a Poll:** `{pre}show <poll_label>` or `/show <poll_label>`',
+            embed.add_field(name=f'🔹 **Show a Poll:** </show:1102089006335922265> `<poll_label>`',
                             value='This command will refresh and display a poll. The votes in the message will always '
                                   'be up to date and accurate. The number of reactions can be different for a number '
                                   'of reasons and you can safely disregard them.',
                             inline=False)
-            embed.add_field(name=f'🔹 **List Polls:** `{pre}show <> | open | closed | prepared` or `/show <> | open | closed | prepared`',
+            embed.add_field(name=f'🔹 **List Polls:** `/show <> | open | closed | prepared`',
                             value=f'If you just type `{pre}show` without an argument it will default to `{pre}show open`.'
                                   'These commands will print a list of open, closed or prepared polls that exist on '
                                   'the server. The first word in bold is the label of the poll and after the colon, '
@@ -170,29 +171,29 @@ class Help(commands.Cog):
                             value='All these commands except copy can only be used by an <admin> or by the author of the poll. '
                                   'Go to 🛠 Configuration for more info on the permissions.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Copy** `{pre}copy <poll_label>` or `/copy <poll_label>`',
+            embed.add_field(name=f'🔹 **Copy** </copy:1102089006335922263> `<poll_label>`',
                             value='This will give you a cmd string that you can post into any channel to create a copy'
                                   'of the specified poll. It will increment the label and depending on the settings, '
                                   'you might need to add missing information like a new deadline. '
                                   f'\nFor more info, see: `{pre}cmd help`.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Close** `{pre}close <poll_label>` or `/close <poll_label>`',
+            embed.add_field(name=f'🔹 **Close** or </close:1102089006335922262> `<poll_label>`',
                             value='Polls will close automatically when their deadline is reached. But you can always '
                                   'close them manually by using this command. A closed poll will lock in the votes so '
                                   'users can no longer change, add or remove votes. Once closed, you can export a poll.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Delete** `{pre}delete <poll_label>` or `/delete <poll_label>`',
+            embed.add_field(name=f'🔹 **Delete** or </delete:1102089006335922261> `<poll_label>`',
                             value='This will *permanently and irreversibly* delete a poll from the database. '
                                   'Once done, the label is freed up and can be assigned again.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Export** `{pre}export <poll_label>` or `/export <poll_label>`',
+            embed.add_field(name=f'🔹 **Export** or </export:1102089006335922264> `<poll_label>`',
                             value='You can use this command or react with 📎 to a closed poll to generate a report. '
                                   'The report will then be sent to you in discord via the bot. This utf8-textfile '
                                   '(make sure to open it in an utf8-ready editor) will contain all the infos about the '
                                   'poll, including a detailed list of participants and their votes (just a list of names '
                                   'for anonymous polls).',
                             inline=False)
-            embed.add_field(name=f'🔹 **Activate** `{pre}activate <poll_label>` or `/activate <poll_label>`',
+            embed.add_field(name=f'🔹 **Activate** or </activate:1102089006335922259> `<poll_label>`',
                             value=f'To see how you can prepare inactive polls read the `{pre}prepare` command under Making '
                                   'New Polls. This command is used to manually activate a prepared poll.',
                             inline=False)
@@ -201,38 +202,39 @@ class Help(commands.Cog):
             embed.add_field(name='🛠 Configuration',
                             value='To run any of these commands you need the **\"Manage Server\"** permisson.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Poll Admins** `{pre}adminrole <role name> (optional)` or `/adminrole <role name> (optional)`',
+            embed.add_field(name=f'🔹 **Poll Admins** </adminrole:1102089006335922257> `<role name> (optional)`',
                             value='This gives the rights to create polls and to control ALL polls on the server. '
                                   f'To see the current role for poll admin, run the command without an argument: `{pre}adminrole`\n'
                                   'If you want to change the admin role to any other role, use the name of the new role '
                                   f'as the argument: `{pre}adminrole moderators`',
                             inline=False)
-            embed.add_field(name=f'🔹 **Poll Users** `{pre}userrole <role name> (optional)` or `/userrole <role name> (optional)`',
+            embed.add_field(name=f'🔹 **Poll Users** </userrole:1102089006335922258> `<role name> (optional)`',
                             value='Everything here is identical to the admin role, except that Poll Users can only '
                                   'control the polls which were created by themselves.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Change Prefix** `{pre}prefix <new_prefix>` or `/prefix <new_prefix>`',
+            embed.add_field(name=f'🔹 **Change Prefix** or </prefix:1102089006335922256> `<new_prefix>`',
                             value='This will change the bot prefix for your server. If you want to use a trailing '
                                   'whitespace, use "\w" instead of " " (discord deletes trailing whitespaces).',
                             inline=False)
-            embed.add_field(name=f'🔹 **Change error message** `/errormessage`',
-                            value="This will change the error message that get send if the bot can't DM a user.\n"
-                                  'it will change to enable or disabled.',
+            embed.add_field(name=f'🔹 **To change settings** </settings:1196482521513328722>',
+                            value="This will either change the settings for the poll closed message or the error message\n"
+                                   "The poll closed setting is to disabled the poll closed message that is send when a poll is schedule to be closed\n"
+                                   "The error message setting is to disabled the message that is send if the bot can't DM a user.",
                             inline=False)
 
         elif page == '❔':
             embed.add_field(name='❔ Debugging',
                             value='These commands are independent of your server prefix and serve to debug the bot.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Debug:** `@debug` or `/debug`',
+            embed.add_field(name=f'🔹 **Debug:** `@debug` or </debug:1102089006583382134>',
                             value='This command will check the required permissions in the channel it is used and'
                                   'generate a short report with suggestions on your next actions.'
                                   'If you are stuck, please visit the support discord server.',
                             inline=False)
-            embed.add_field(name=f'🔹 **Mention:** `@mention` | `@mention prefix` or `/mention <tag>`',
-                            value='This is a prefix independent command to retrieve your prefix in case you changed '
-                                  'and forgot it. More `@mention` tags might be added in the future.',
-                            inline=False)
+            # embed.add_field(name=f'🔹 **Mention:** `@mention` | `@mention prefix` or </mention:1102089006583382135> `<tag>`',
+            #                 value='This is a prefix independent command to retrieve your prefix in case you changed '
+            #                       'and forgot it. More `@mention` tags might be added in the future.',
+            #                 inline=False)
 
         elif page == '💖':
             embed.add_field(name='💖 RT Pollmaster 💖',
@@ -242,8 +244,9 @@ class Help(commands.Cog):
                             value='developed by RJGamer1002 (<@183940132129210369>)',
                             inline=False)
             embed.add_field(name='🔹 **Support**',
-                            value='You can support RT Pollmaster by sending an upvote his way or by clicking the ~~donate link~~ '
-                                  'on the top.gg page:\n https://top.gg/bot/753217458029985852',
+                            value='You can support RT Pollmaster by sending an upvote his way or by writing a review '
+                                  'on the top.gg page:\n https://top.gg/bot/753217458029985852'
+                                  '\nYou can also donate here: https://ko-fi.com/rtpollmaster',
                             inline=False)
             embed.add_field(name='🔹 **Support Server**',
                             value='If you need help with RT Pollmaster, want to try him out or would like to give feedback '
@@ -252,7 +255,7 @@ class Help(commands.Cog):
             embed.add_field(name='🔹 **Github**',
                             value='The full python source code is on my Github: https://github.com/RJ1002/pollmaster',
                             inline=False)
-            embed.add_field(name='**Thanks for using RT Pollmaster!** 💗', value='RJGame1002', inline=False)
+            embed.add_field(name='**Thanks for using RT Pollmaster!** 💗', value='RJGamer1002', inline=False)
         else:
             return None
 
@@ -260,23 +263,24 @@ class Help(commands.Cog):
 
     # @commands.hybrid_command(name="pmhelp",description="Display commands")
 
-    @commands.hybrid_command(name="help", description="Display commands", with_app_command=True)
+    @app_commands.command(name="help", description="Display commands")
     async def pmhelp(self, ctx):
-        server = await ask_for_server(self.bot, ctx.message)
+        server = await ask_for_server(self.bot, ctx)
         if not server:
             return
+        await ctx.response.defer(thinking=True)
 
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.reply("`help` can only be used in a server text channel.", delete_after=60)
+        if not (isinstance(ctx.channel, discord.TextChannel) or isinstance(ctx.channel, discord.Thread)):
+            await ctx.followup.send("`help` can only be used in a server text channel.")
             return
-        permissions = ctx.message.channel.permissions_for(server.me)
+        permissions = ctx.channel.permissions_for(server.me)
         if not permissions.embed_links or not permissions.manage_messages or not permissions.add_reactions or not permissions.read_message_history:
-            await ctx.reply("Error: Missing permissions. Type \"/debug.\"", delete_after=60)
+            await ctx.followup.send("Error: Missing permissions. Type \"/debug.\"")
             return
         
         guild = ctx.guild
         if not guild:
-            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            await ctx.followup.send("Could not determine your server. Run the command in a server text channel.")
             return
         print('help menu started!')
         pre = await get_server_pre(self.bot, server)
@@ -301,37 +305,42 @@ class Help(commands.Cog):
         if message.content.startswith(f"<@{self.bot.user.id}>"):
             print(message.content)
             print(self.bot.user.name)
+            try:
+                print(message.guild.id)
+                print(message.author.id)
+            except:
+                print("none")
 
-            if message.content.startswith(f"<@{self.bot.user.id}> mention"):
-                channel = message.channel
-                if not isinstance(channel, discord.TextChannel):
-                    await channel.send("@mention can only be used in a server text channel.")
-                    return
+            # if message.content.startswith(f"<@{self.bot.user.id}> mention"):
+            #     channel = message.channel
+            #     if not isinstance(channel, discord.TextChannel):
+            #         await channel.send("@mention can only be used in a server text channel.")
+            #         return
 
-                guild = message.guild
-                if not guild:
-                    await channel.send("Could not determine your server.")
-                    return
+            #     guild = message.guild
+            #     if not guild:
+            #         await channel.send("Could not determine your server.")
+            #         return
 
-                if message.content == f"<@{self.bot.user.id}> mention":
-                    await channel.send("The following mention tags are available:\n🔹 mention prefix")
-                    return
+            #     if message.content == f"<@{self.bot.user.id}> mention":
+            #         await channel.send("The following mention tags are available:\n🔹 mention prefix")
+            #         return
 
-                try:
-                    tags = message.content.split()
-                    tag = tags[len(tags)-1].lower()
-                except IndexError:
-                    await channel.send(f"Wrong formatting. Type \"@{self.bot.user.name} mention\" or "
-                                       f"\"@{self.bot.user.name} mention <tag>\".")
-                    return
+            #     try:
+            #         tags = message.content.split()
+            #         tag = tags[len(tags)-1].lower()
+            #     except IndexError:
+            #         await channel.send(f"Wrong formatting. Type \"@{self.bot.user.name} mention\" or "
+            #                            f"\"@{self.bot.user.name} mention <tag>\".")
+            #         return
 
-                if tag == "prefix":
-                    pre = await get_server_pre(self.bot, guild)
-                    # await channel.send(f'The prefix for this server/channel is: \n {pre} \n To change it type: \n'
+            #     if tag == "prefix":
+            #         pre = await get_server_pre(self.bot, guild)
+            #         # await channel.send(f'The prefix for this server/channel is: \n {pre} \n To change it type: \n'
                     #                    f'{pre}prefix <new_prefix>')
-                    await channel.send(pre)
-                else:
-                    await channel.send(f'Tag "{tag}" not found. Type `@{self.bot.user.name} mention` for a list of tags.')
+            #         await channel.send(pre)
+            #     else:
+            #         await channel.send(f'Tag "{tag}" not found. Type `@{self.bot.user.name} mention` for a list of tags.')
             if message.content.startswith(f"<@{self.bot.user.id}> debug"):
                 channel = message.channel
                 if not isinstance(channel, discord.TextChannel):
@@ -398,13 +407,14 @@ class Help(commands.Cog):
     async def pmdebug(self, ctx):
         print("debug command")
         print(self.bot.user.name)
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.response.send_message("`debug` can only be used in a server text channel.", delete_after=60)
+        await ctx.response.defer(thinking=True)
+        if not (isinstance(ctx.channel, discord.TextChannel) or isinstance(ctx.channel, discord.Thread) or isinstance(ctx.channel, discord.DMChannel)):
+            await ctx.followup.send("`debug` can only be used in a server text channel.")
             return
 
         guild = ctx.guild
         if not guild:
-            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            await ctx.followup.send("Could not determine your server. Run the command in a server text channel.")
             return
 
         status_msg = ''
@@ -453,41 +463,40 @@ class Help(commands.Cog):
         else:
             status_msg += 'Please try to fix the issues above. \nIf you are still having problems, ' \
                           'visit the support discord server.'
-        await ctx.response.send_message(status_msg, delete_after=60)
-    tag = str
-    @app_commands.command(name="mention", description="run mention")
-    @app_commands.describe(
-        tag='options: prefix',
-    )
-    async def pmmention(self, ctx, *, tag: tag = None):
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.response.send_message("`/mention` can only be used in a server text channel.", delete_after=60)
-            return
+        await ctx.followup.send(status_msg)
+    # @app_commands.command(name="mention", description="run mention")
+    # @app_commands.describe(
+    #     tag='options: prefix',
+    # )
+    # async def pmmention(self, ctx, *, tag: str = None):
+    #     if not isinstance(ctx.channel, discord.TextChannel):
+    #         await ctx.response.send_message("`/mention` can only be used in a server text channel.", delete_after=60)
+    #         return
 
-        guild = ctx.guild
-        if not guild:
-            await ctx.response.send_message("Could not determine your server.", delete_after=60)
-            return
-        if tag == "prefix":
-            pre = await get_server_pre(self.bot, guild)
-            await ctx.response.send_message(f'The prefix for this server/channel is: \n {pre} \n To change it type: \n'
-                                f'{pre}prefix <new_prefix>', delete_after=60)
-            #await ctx.response.send_message(pre)
-        elif tag == None:
-            await ctx.response.send_message("The following mention tags are available:\n🔹 prefix", delete_after=60)
-        else:
-            await ctx.response.send_message(f'Tag "{tag}" not found. Type `/mention` for a list of tags.', delete_after=60)
+    #     guild = ctx.guild
+    #     if not guild:
+    #         await ctx.response.send_message("Could not determine your server.", delete_after=60)
+    #         return
+    #     if tag == "prefix":
+    #         pre = await get_server_pre(self.bot, guild)
+    #         await ctx.response.send_message(f'The prefix for this server/channel is: \n {pre} \n To change it type: \n'
+    #                             f'{pre}prefix <new_prefix>', delete_after=60)
+    #         #await ctx.response.send_message(pre)
+    #     elif tag == None:
+    #         await ctx.response.send_message("The following mention tags are available:\n🔹 prefix", delete_after=60)
+    #     else:
+    #         await ctx.response.send_message(f'Tag "{tag}" not found. Type `/mention` for a list of tags.', delete_after=60)
     @app_commands.command(name="ping", description="send a ping to bot")
     async def pmping(self, ctx):
-        if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.response.send_message("`/ping` can only be used in a server text channel.", delete_after=60)
+        if not (isinstance(ctx.channel, discord.TextChannel) or isinstance(ctx.channel, discord.Thread)):
+            await ctx.response.send_message("`/ping` can only be used in a server text channel.")
             return
         guild = ctx.guild
         if not guild:
-            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.")
             return
         else:
-            await ctx.response.send_message(f'Pong! In {round(ctx.client.latency * 1000)}ms', delete_after=60)
+            await ctx.response.send_message(f'Pong! In {round(ctx.client.latency * 1000)}ms')
     
 
 async def setup(bot):

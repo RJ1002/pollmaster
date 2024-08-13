@@ -5,10 +5,10 @@ from essentials.secrets import SECRETS
 
 class Settings:
     def __init__(self):
-        self.color = discord.Colour(int('7289da', 16))
-        self.title_icon = "https://i.imgur.com/vtLsAl8.jpg" #PM
-        self.author_icon = "https://i.imgur.com/TYbBtwB.jpg" #tag
-        self.report_icon = "https://i.imgur.com/YksGRLN.png" #report
+        self.color = discord.Colour(int('e75e28', 16))
+        self.title_icon = "https://i.imgur.com/MvJIuB7.jpg" #PM
+        self.author_icon = "https://i.imgur.com/zqHvRvz.jpg" #tag
+        self.report_icon = "https://i.imgur.com/YDBQm3U.png" #report
         self.owner_id = 183940132129210369
         self.msg_errors = False #send a DM to bot owner about a error(make sure you edit self.owner_id so the bot know who the bot owner is)
         self.log_errors = True

@@ -15,7 +15,7 @@ class Admin(commands.Cog):
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.reply("Only the bot owner can use this module. Join the support discord server if you are having "
-                           f"any problems. This usage has been logged.", delete_after=60)
+                           f"any problems. This usage has been logged.")
             logger.warning(f'User {ctx.author} ({ctx.author.id}) has tried to access a restricted '
                            f'command in guild: {ctx.author.guild} ({ctx.author.guild.id}). command used: `/reload` or `pm!reload`')
             #send a DM to bot owner
@@ -23,7 +23,7 @@ class Admin(commands.Cog):
             await warning.send(f'User {ctx.author} ({ctx.author.id}) has tried to access a restricted '
                            f'command in guild: {ctx.author.guild} ({ctx.author.guild.id}). command used: `/reload` or `pm!reload`')
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.reply("Missing a required argument for this command.", delete_after=60)
+            await ctx.reply("Missing a required argument for this command.")
         else:
             logger.warning(error)
 
@@ -67,17 +67,18 @@ class Admin(commands.Cog):
         id='enter guild id to leave',
     )
     async def guildleave(self, ctx, *, id: id = None):
+        await ctx.response.defer(thinking=True)
         result = await self.bot.db.config.find_one({'_id': id})
         if not isinstance(ctx.channel, discord.TextChannel):
-            await ctx.response.send_message("`/guildleave` can only be used in a server text channel.", delete_after=60)
+            await ctx.followup.send("`/guildleave` can only be used in a server text channel.")
             return
         guild = ctx.guild
         if not guild:
-            await ctx.response.send_message("Could not determine your server. Run the command in a server text channel.", delete_after=60)
+            await ctx.followup.send("Could not determine your server. Run the command in a server text channel.")
             return
         if not self.bot.owner == ctx.user.id:
-            await ctx.response.send_message("Only the bot owner can use this module. Join the support discord server if you are having "
-                           f"any problems. This usage has been logged.", delete_after=60)
+            await ctx.followup.send("Only the bot owner can use this module. Join the support discord server if you are having "
+                           f"any problems. This usage has been logged.")
             logger.warning(f'User {ctx.user} ({ctx.user.id}) has tried to access a restricted '
                            f'command in guild: {ctx.user.guild} ({ctx.user.guild.id}). command used: `/guildleave`')
             #send a DM to bot owner
@@ -86,18 +87,18 @@ class Admin(commands.Cog):
                            f'command in guild: {ctx.user.guild} ({ctx.user.guild.id}). command used: `/guildleave`')
             return
         if not id:
-            await ctx.response.send_message(f'you need to choose a guild id! ', delete_after=60)
+            await ctx.followup.send(f'you need to choose a guild id! ')
             return
         if not result:
-            await ctx.response.send_message(f'guild id `{id}` not found.', delete_after=60)
+            await ctx.followup.send(f'guild id `{id}` not found.')
             return
-        if id == result.get('_id'):
+        if id == result.get('_id') and self.bot.owner == ctx.user.id:
               guildobject = self.bot.get_guild(int(id))
-              await ctx.response.send_message(f'bot left {id} {guildobject}', delete_after=60)
+              await ctx.response.send_message(f'bot left {id} {guildobject}')
               await guildobject.leave()
               return
         else:
-            await ctx.response.send_message(f'guild id `{id}` not found.', delete_after=60)
+            await ctx.response.send_message(f'guild id `{id}` not found.')
 
 
 async def setup(bot):

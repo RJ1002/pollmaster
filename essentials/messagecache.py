@@ -5,8 +5,8 @@ logger = logging.getLogger('discord')
 
 
 class MessageCache:
-    def __init__(self, _bot):
-        self._bot = _bot
+    def __init__(self, bot):
+        self.bot = bot
         self._cache_dict = {}
 
     def put(self, key, value: discord.Message):
@@ -17,10 +17,6 @@ class MessageCache:
     def get(self, key):
         # Try to find it in this cache, then see if it is cached in the bots own message cache
         message = self._cache_dict.get(key, None)
-        if message == None:
-            for m in self._bot._connection._messages:
-                if m.id == key:
-                    return m
         return message
 
     def clear(self):
