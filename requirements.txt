@@ -11,6 +11,6 @@ websockets==12.0
 matplotlib==3.7.4
 multidict==6.0.5
 pymongo==4.8.0
-numpy==1.26.4
+numpy==2.1.2
 six==1.16
 topggpy==1.4.0
